@@ -374,7 +374,8 @@ async function setSize(n){await dbSet(`rooms/${roomCode}/teamSize`,n);}
 
 async function doShuffle(){
   const room=await dbGet(`rooms/${roomCode}`);
-  const approved=Object.values(room.participants||{}).filter(p=>p.status==="approved");
+  const adminMember={id:myId,name:myName,status:"approved"};
+  const approved=[adminMember,...Object.values(room.participants||{}).filter(p=>p.status==="approved")];
   if(approved.length<2)return;
   const shuffled=[...approved].sort(()=>Math.random()-.5);
   const sz=room.teamSize||5;
