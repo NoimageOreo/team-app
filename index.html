@@ -1,134 +1,421 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>チーム分けアプリ</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>チーム分けアプリ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f4f6;min-height:100vh}
+input{width:100%;border:2px solid #e5e7eb;border-radius:.75rem;padding:.75rem 1rem;font-size:.9rem;margin-bottom:.75rem;outline:none}
+input:focus{border-color:#4f46e5}
+.btn{width:100%;padding:.8rem;border:none;border-radius:.75rem;font-size:.9rem;font-weight:700;cursor:pointer}
+.btn-indigo{background:#4f46e5;color:white}
+.btn-green{background:#10b981;color:white}
+.error{background:#fef2f2;color:#dc2626;padding:.6rem;border-radius:.5rem;font-size:.8rem;text-align:center;margin-bottom:.75rem;display:none}
+/* tabs */
+.tabs{display:flex;border-radius:.75rem;overflow:hidden;border:1px solid #e5e7eb;margin-bottom:1.25rem}
+.tab{flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:white;color:#6b7280}
+.tab.on{background:#4f46e5;color:white}
+/* spinner */
+.spin{width:50px;height:50px;border:4px solid #fcd34d;border-top-color:transparent;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 1rem}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* size buttons */
+.szbtns{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
+.szbtn{width:42px;height:42px;border:2px solid #e5e7eb;background:white;border-radius:.75rem;font-weight:700;cursor:pointer;color:#374151}
+.szbtn.on{background:#4f46e5;color:white;border-color:#4f46e5}
+/* cards */
+.card{background:white;border-radius:1.25rem;padding:1.25rem;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.row{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid #f3f4f6}
+.row:last-child{border-bottom:none}
+.av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:.85rem;flex-shrink:0}
+.btn-sm{border:none;padding:.4rem .8rem;border-radius:.5rem;font-size:.75rem;font-weight:700;cursor:pointer}
+.btn-approve{background:#10b981;color:white}
+.btn-reject{background:#fee2e2;color:#dc2626}
+.btn-add{background:#3b82f6;color:white}
+.btn-kick{background:#fee2e2;color:#dc2626}
+.empty{text-align:center;color:#9ca3af;font-size:.85rem;padding:1.5rem 0}
+</style>
 </head>
 <body>
 
 <!-- HOME -->
-<div id="home" class="screen" style="display:none">
-  <div style="min-height:100vh;background:linear-gradient(135deg,#3730a3,#7c3aed);display:flex;align-items:center;justify-content:center;padding:1rem">
-    <div class="home-card">
-      <div class="home-icon">👥</div>
-      <h1 class="home-title">チーム分けアプリ</h1>
-      <p class="home-sub">サークル・イベントのチーム編成ツール</p>
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="create">🛡 管理者</button>
-        <button class="tab-btn" data-tab="join">➕ 参加者</button>
-      </div>
-      <div id="home-error" class="error-msg" style="display:none"></div>
-      <input id="input-name" type="text" placeholder="あなたの名前" />
-      <div id="join-fields" style="display:none">
-        <input id="input-code" type="text" class="code-input" placeholder="ルームコード（例: AB3X）" maxlength="4" />
-      </div>
-      <button id="home-btn" class="btn btn-primary">ルームを作成する</button>
+<div id="s-home" style="display:none;min-height:100vh;background:linear-gradient(135deg,#3730a3,#7c3aed);align-items:center;justify-content:center;padding:1rem">
+  <div style="background:white;border-radius:1.5rem;padding:2rem;width:100%;max-width:360px;box-shadow:0 20px 40px rgba(0,0,0,.3)">
+    <div style="text-align:center;font-size:3rem;margin-bottom:.5rem">👥</div>
+    <h1 style="text-align:center;font-size:1.5rem;font-weight:800;color:#1f2937;margin-bottom:.25rem">チーム分けアプリ</h1>
+    <p style="text-align:center;font-size:.8rem;color:#6b7280;margin-bottom:1.5rem">サークル・イベントのチーム編成ツール</p>
+    <div class="tabs">
+      <button class="tab on" data-tab="create" onclick="switchTab(this)">🛡 管理者</button>
+      <button class="tab" data-tab="join" onclick="switchTab(this)">➕ 参加者</button>
     </div>
+    <div id="h-err" class="error"></div>
+    <input id="h-name" type="text" placeholder="あなたの名前"/>
+    <div id="join-fields" style="display:none">
+      <input id="h-code" type="text" placeholder="ルームコード（例: AB3X）" maxlength="4" style="text-transform:uppercase;text-align:center;letter-spacing:.3em;font-weight:800"/>
+    </div>
+    <button class="btn btn-indigo" id="h-btn" onclick="homeAction()">ルームを作成する</button>
   </div>
 </div>
 
 <!-- WAITING -->
-<div id="waiting" class="screen" style="display:none">
-  <div style="min-height:100vh;background:linear-gradient(135deg,#fffbeb,#fef3c7);display:flex;align-items:center;justify-content:center;padding:1rem">
-    <div class="waiting-card">
-      <div class="spinner"></div>
-      <h2>承認を待っています</h2>
-      <p>管理者が承認するまでしばらくお待ちください</p>
-      <div class="code-badge">
-        <small>ルームコード</small>
-        <div class="big-code" id="waiting-code"></div>
-      </div>
-      <p style="font-size:0.75rem;color:#92400e;margin-top:0.75rem">参加名: <strong id="waiting-name"></strong></p>
+<div id="s-waiting" style="display:none;min-height:100vh;background:linear-gradient(135deg,#fffbeb,#fef3c7);align-items:center;justify-content:center;padding:1rem">
+  <div style="background:white;border-radius:1.5rem;padding:2.5rem 2rem;text-align:center;max-width:320px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.1)">
+    <div class="spin"></div>
+    <h2 style="font-size:1.2rem;font-weight:800;color:#1f2937;margin-bottom:.5rem">承認を待っています</h2>
+    <p style="font-size:.8rem;color:#6b7280;margin-bottom:1.5rem">管理者が承認するまでお待ちください</p>
+    <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:.75rem;padding:1rem">
+      <p style="font-size:.7rem;color:#d97706;font-weight:600;margin-bottom:.25rem">ルームコード</p>
+      <p id="w-code" style="font-size:2rem;font-weight:900;color:#b45309;letter-spacing:.3em"></p>
     </div>
+    <p style="font-size:.75rem;color:#92400e;margin-top:.75rem">参加名: <strong id="w-name"></strong></p>
   </div>
 </div>
 
 <!-- PARTICIPANT -->
-<div id="participant" class="screen" style="display:none">
-  <div style="min-height:100vh;background:#f3f4f6;padding:1rem">
-    <div class="p-inner">
-      <div id="p-team-hero" class="team-hero" style="display:none">
-        <small>あなたのチーム</small>
-        <div class="team-number" id="p-team-number"></div>
-        <div class="team-label" id="p-team-label"></div>
-      </div>
-      <div id="p-waiting-notice" class="waiting-notice">
-        <div class="icon">⏳</div>
-        <p>管理者がチーム分けを行うまでお待ちください</p>
-      </div>
-      <div class="card" id="p-members-card" style="display:none">
-        <h3 id="p-member-count">あなたのチームメンバー</h3>
-        <div id="p-members"></div>
-      </div>
-      <div class="card" id="p-all-card" style="display:none">
-        <h3>全チーム</h3>
-        <div id="p-all-teams"></div>
-      </div>
+<div id="s-participant" style="display:none;min-height:100vh;background:#f3f4f6;padding:1rem">
+  <div style="max-width:400px;margin:0 auto">
+    <div id="p-hero" style="display:none;border-radius:1.5rem;padding:2rem;text-align:center;margin-bottom:1rem">
+      <p style="color:rgba(255,255,255,.8);font-size:.75rem;font-weight:600;margin-bottom:.25rem">あなたのチーム</p>
+      <p id="p-num" style="font-size:7rem;font-weight:900;color:white;line-height:1"></p>
+      <p id="p-label" style="font-size:1.2rem;font-weight:700;color:rgba(255,255,255,.9)"></p>
+    </div>
+    <div id="p-wait" class="card" style="text-align:center;padding:2rem">
+      <p style="font-size:2rem;margin-bottom:.5rem">⏳</p>
+      <p style="color:#6b7280;font-size:.85rem">管理者がチーム分けを行うまでお待ちください</p>
+    </div>
+    <div id="p-members-card" class="card" style="display:none">
+      <h3 id="p-member-title" style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:.75rem"></h3>
+      <div id="p-members"></div>
+    </div>
+    <div id="p-all-card" class="card" style="display:none">
+      <h3 style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:.75rem">全チーム</h3>
+      <div id="p-all"></div>
     </div>
   </div>
 </div>
 
 <!-- ADMIN -->
-<div id="admin" class="screen" style="display:none">
-  <div class="admin-header">
-    <div class="admin-header-inner">
-      <div class="admin-meta">管理者パネル</div>
-      <div class="admin-code-row">
-        <div class="admin-code" id="admin-code-display"></div>
-        <button class="copy-btn" id="copy-btn">📋</button>
-        <span class="status-badge status-wait" id="admin-status-badge">⏳ 待機中</span>
+<div id="s-admin" style="display:none;min-height:100vh;background:#f3f4f6;padding-bottom:2rem">
+  <div style="background:#4338ca;color:white;padding:1.25rem 1rem 1.5rem">
+    <div style="max-width:500px;margin:0 auto">
+      <div style="font-size:.75rem;color:#a5b4fc;margin-bottom:.25rem">管理者パネル</div>
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <div id="a-code" style="font-size:2.5rem;font-weight:900;letter-spacing:.2em"></div>
+        <button onclick="copyCode()" style="background:#4f46e5;border:none;color:white;padding:.5rem;border-radius:.5rem;cursor:pointer;font-size:1rem" id="copy-btn">📋</button>
+        <span id="a-badge" style="font-size:.7rem;font-weight:700;padding:.2rem .6rem;border-radius:9999px;background:#4f46e5;margin-left:auto">⏳ 待機中</span>
       </div>
-      <div class="admin-stats" id="admin-stats"></div>
+      <div id="a-stats" style="font-size:.75rem;color:#c7d2fe;margin-top:.5rem"></div>
     </div>
   </div>
-  <div class="admin-body">
-    <div id="error-box" class="error-box" style="display:none"></div>
+  <div style="max-width:500px;margin:0 auto;padding:1rem">
+    <div id="a-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:.75rem;border-radius:.75rem;font-size:.8rem;margin-bottom:.75rem"></div>
 
     <!-- 申請 -->
-    <div class="section" id="req-section" style="display:none">
-      <div class="section-header"><div class="dot dot-yellow"></div><span id="req-count">入室申請</span></div>
-      <div id="req-list"></div>
+    <div id="a-req-sec" class="card" style="display:none">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
+        <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></div>
+        <span id="a-req-title">入室申請</span>
+      </div>
+      <div id="a-req-list"></div>
     </div>
 
-    <!-- チーム設定 -->
-    <div class="section" id="setup-section">
-      <div class="section-header"><div class="dot" style="background:#4f46e5"></div>チーム設定</div>
-      <p style="font-size:0.8rem;color:#6b7280;margin-bottom:0.5rem">1チームの人数</p>
-      <div class="size-btns">
-        <button class="size-btn" id="sz-2">2</button>
-        <button class="size-btn" id="sz-3">3</button>
-        <button class="size-btn" id="sz-4">4</button>
-        <button class="size-btn active" id="sz-5">5</button>
-        <button class="size-btn" id="sz-6">6</button>
-        <button class="size-btn" id="sz-7">7</button>
-        <button class="size-btn" id="sz-8">8</button>
-        <button class="size-btn" id="sz-10">10</button>
+    <!-- 設定 -->
+    <div id="a-setup-sec" class="card">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
+        <div style="width:8px;height:8px;border-radius:50%;background:#4f46e5"></div>チーム設定
       </div>
-      <div class="preview-box" id="preview-text"></div>
-      <button class="btn-shuffle" id="shuffle-btn" disabled>🔀 ランダムでチーム分けする</button>
+      <p style="font-size:.8rem;color:#6b7280;margin-bottom:.5rem">1チームの人数</p>
+      <div class="szbtns" id="sz-btns"></div>
+      <div id="a-preview" style="background:#eef2ff;border-radius:.75rem;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#4338ca;font-weight:600"></div>
+      <button id="a-shuffle" onclick="doShuffle()" disabled style="width:100%;background:#4f46e5;color:white;border:none;padding:.9rem;border-radius:.75rem;font-size:.9rem;font-weight:700;cursor:pointer;opacity:.4">🔀 ランダムでチーム分けする</button>
     </div>
 
     <!-- 承認済み -->
-    <div class="section">
-      <div class="section-header"><div class="dot dot-green"></div><span id="approved-count">承認済み参加者</span></div>
-      <div id="approved-list"><div class="empty-msg">まだ参加者がいません</div></div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
+        <div style="width:8px;height:8px;border-radius:50%;background:#10b981"></div>
+        <span id="a-approved-title">承認済み参加者</span>
+      </div>
+      <div id="a-approved-list"><div class="empty">まだ参加者がいません</div></div>
     </div>
 
     <!-- チーム結果 -->
-    <div class="section" id="teams-section" style="display:none">
-      <div class="section-header">
-        <div class="dot dot-purple"></div>チーム結果
-        <button class="reshuffle-btn" id="reshuffle-btn">🔀 再シャッフル</button>
+    <div id="a-teams-sec" class="card" style="display:none">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
+        <div style="width:8px;height:8px;border-radius:50%;background:#8b5cf6"></div>チーム結果
+        <button onclick="doShuffle()" style="margin-left:auto;background:none;border:1px solid #c7d2fe;color:#4f46e5;font-size:.75rem;padding:.2rem .6rem;border-radius:.5rem;cursor:pointer;font-weight:600">🔀 再シャッフル</button>
       </div>
-      <div id="teams-list"></div>
+      <div id="a-teams-list"></div>
     </div>
 
-    <button class="btn-exit" id="exit-btn">🚪 ルームを終了する</button>
+    <button onclick="exitRoom()" style="width:100%;background:none;border:none;color:#9ca3af;font-size:.8rem;padding:.5rem;cursor:pointer;margin-top:.5rem">🚪 ルームを終了する</button>
   </div>
 </div>
 
-<script src="app.js"></script>
+<script>
+const DB = "https://divide-team-default-rtdb.firebaseio.com";
+const COLORS = [
+  {bg:"#3b82f6",light:"#eff6ff",border:"#bfdbfe",text:"#1d4ed8"},
+  {bg:"#ef4444",light:"#fef2f2",border:"#fecaca",text:"#b91c1c"},
+  {bg:"#10b981",light:"#ecfdf5",border:"#a7f3d0",text:"#065f46"},
+  {bg:"#f59e0b",light:"#fffbeb",border:"#fde68a",text:"#b45309"},
+  {bg:"#8b5cf6",light:"#f5f3ff",border:"#ddd6fe",text:"#6d28d9"},
+  {bg:"#ec4899",light:"#fdf2f8",border:"#fbcfe8",text:"#9d174d"},
+  {bg:"#6366f1",light:"#eef2ff",border:"#c7d2fe",text:"#4338ca"},
+  {bg:"#f97316",light:"#fff7ed",border:"#fed7aa",text:"#c2410c"},
+  {bg:"#14b8a6",light:"#f0fdfa",border:"#99f6e4",text:"#0f766e"},
+  {bg:"#06b6d4",light:"#ecfeff",border:"#a5f3fc",text:"#0e7490"},
+];
+const genCode = () => Math.random().toString(36).substring(2,6).toUpperCase();
+const genId = () => Math.random().toString(36).substring(2,10);
+let myId = sessionStorage.getItem("myId") || genId();
+sessionStorage.setItem("myId", myId);
+let roomCode = "", pollTimer = null, currentTab = "create", myName = "";
+
+async function dbGet(p){const r=await fetch(`${DB}/${p}.json`);return r.json();}
+async function dbSet(p,d){await fetch(`${DB}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});}
+
+function show(id){
+  ["s-home","s-waiting","s-participant","s-admin"].forEach(s=>{
+    const el=document.getElementById(s);
+    el.style.display="none";
+  });
+  const t=document.getElementById(id);
+  t.style.display=(id==="s-home"||id==="s-waiting")?"flex":"block";
+}
+
+function switchTab(btn){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+  btn.classList.add("on");
+  currentTab=btn.dataset.tab;
+  document.getElementById("join-fields").style.display=currentTab==="join"?"block":"none";
+  document.getElementById("h-btn").textContent=currentTab==="create"?"ルームを作成する":"入室申請する";
+  document.getElementById("h-btn").className="btn "+(currentTab==="create"?"btn-indigo":"btn-green");
+  document.getElementById("h-err").style.display="none";
+}
+
+function showErr(msg){const e=document.getElementById("h-err");e.textContent=msg;e.style.display=msg?"block":"none";}
+
+async function homeAction(){
+  const name=document.getElementById("h-name").value.trim();
+  showErr("");
+  if(!name)return showErr("名前を入力してください");
+  myName=name;
+  if(currentTab==="create"){
+    const code=genCode();
+    const data={adminId:myId,adminName:name,teamSize:5,participants:{},teams:{},gameStarted:false};
+    await dbSet(`rooms/${code}`,data);
+    roomCode=code;
+    startAdminPoll();
+    show("s-admin");
+  } else {
+    const code=document.getElementById("h-code").value.trim().toUpperCase();
+    if(code.length!==4)return showErr("ルームコードは4文字です");
+    const room=await dbGet(`rooms/${code}`);
+    if(!room)return showErr("ルームが見つかりません");
+    await dbSet(`rooms/${code}/participants/${myId}`,{id:myId,name,status:"waiting",joinedAt:Date.now()});
+    roomCode=code;
+    document.getElementById("w-code").textContent=code;
+    document.getElementById("w-name").textContent=name;
+    show("s-waiting");
+    startWaitingPoll();
+  }
+}
+
+function startPoll(fn){stopPoll();fn();pollTimer=setInterval(fn,1500);}
+function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+
+function startWaitingPoll(){
+  startPoll(async()=>{
+    const me=await dbGet(`rooms/${roomCode}/participants/${myId}`);
+    if(!me)return;
+    if(me.status==="approved"){
+      stopPoll();
+      const room=await dbGet(`rooms/${roomCode}`);
+      renderParticipant(room);
+      show("s-participant");
+      startParticipantPoll();
+    }
+    if(me.status==="kicked"){stopPoll();roomCode="";show("s-home");showErr("管理者により退出させられました");}
+  });
+}
+
+function renderParticipant(room){
+  const teams=room.teams?Object.values(room.teams):[];
+  const myTeam=teams.find(t=>t.members&&Object.values(t.members).some(m=>m.id===myId));
+  const ti=myTeam?teams.indexOf(myTeam):0;
+  const c=COLORS[ti%COLORS.length];
+  if(myTeam&&room.gameStarted){
+    const hero=document.getElementById("p-hero");
+    hero.style.display="block";hero.style.background=c.bg;
+    document.getElementById("p-num").textContent=ti+1;
+    document.getElementById("p-label").textContent=`チーム ${ti+1}`;
+    document.getElementById("p-wait").style.display="none";
+    const mems=Object.values(myTeam.members||{});
+    document.getElementById("p-member-title").textContent=`あなたのチームメンバー（${mems.length}人）`;
+    document.getElementById("p-members").innerHTML=mems.map(m=>`
+      <div class="row">
+        <div class="av" style="background:${c.bg}">${m.name[0]}</div>
+        <span style="flex:1;font-size:.9rem;color:#1f2937">${m.name}</span>
+        ${m.id===myId?'<span style="font-size:.7rem;background:#d1fae5;color:#065f46;padding:.2rem .5rem;border-radius:9999px">あなた</span>':""}
+      </div>`).join("");
+    document.getElementById("p-members-card").style.display="block";
+    document.getElementById("p-all").innerHTML=teams.map((t,i)=>{
+      const col=COLORS[i%COLORS.length];
+      const ms=Object.values(t.members||{});
+      return `<div style="margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+          <span style="background:${col.bg};color:white;font-size:.75rem;font-weight:700;padding:.2rem .75rem;border-radius:9999px">チーム ${i+1}</span>
+          <span style="font-size:.75rem;color:${col.text};font-weight:600">${ms.length}人</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;padding-left:.5rem">
+          ${ms.map(m=>`<span style="background:${col.light};color:${col.text};font-size:.75rem;padding:.2rem .6rem;border-radius:9999px">${m.name}${m.id===myId?" 👈":""}</span>`).join("")}
+        </div>
+      </div>`;
+    }).join("");
+    document.getElementById("p-all-card").style.display="block";
+  }
+}
+
+function startParticipantPoll(){
+  startPoll(async()=>{
+    const me=await dbGet(`rooms/${roomCode}/participants/${myId}`);
+    if(!me||me.status==="kicked"){stopPoll();roomCode="";show("s-home");showErr("管理者により退出させられました");return;}
+    const room=await dbGet(`rooms/${roomCode}`);
+    if(room)renderParticipant(room);
+  });
+}
+
+function startAdminPoll(){
+  // サイズボタン生成
+  const szbtns=document.getElementById("sz-btns");
+  szbtns.innerHTML=[2,3,4,5,6,7,8,10].map(n=>`<button class="szbtn${n===5?" on":""}" onclick="setSize(${n})">${n}</button>`).join("");
+  startPoll(async()=>{
+    const room=await dbGet(`rooms/${roomCode}`);
+    if(room)renderAdmin(room);
+  });
+}
+
+function renderAdmin(room){
+  const parts=room.participants?Object.values(room.participants):[];
+  const waiting=parts.filter(p=>p.status==="waiting");
+  const approved=parts.filter(p=>p.status==="approved");
+  const teams=room.teams?Object.values(room.teams):[];
+  document.getElementById("a-code").textContent=roomCode;
+  document.getElementById("a-stats").textContent=`承認済み: ${approved.length}人 / 申請中: ${waiting.length}人`;
+  document.getElementById("a-badge").textContent=room.gameStarted?"🏃 試合中":"⏳ 待機中";
+  document.getElementById("a-badge").style.background=room.gameStarted?"#10b981":"#4f46e5";
+
+  // 申請
+  if(waiting.length>0){
+    document.getElementById("a-req-sec").style.display="block";
+    document.getElementById("a-req-title").textContent=`入室申請 (${waiting.length}件)${room.gameStarted?" — 途中参加":""}`;
+    document.getElementById("a-req-list").innerHTML=waiting.map(p=>`
+      <div class="row">
+        <div class="av" style="background:#fef3c7;color:#d97706">${p.name[0]}</div>
+        <span style="flex:1;font-size:.9rem;color:#1f2937">${p.name}</span>
+        ${room.gameStarted
+          ?`<button class="btn-sm btn-add" onclick="addLate('${p.id}')">追加</button>&nbsp;<button class="btn-sm btn-reject" onclick="kickUser('${p.id}')">拒否</button>`
+          :`<button class="btn-sm btn-approve" onclick="approveUser('${p.id}')">承認</button>&nbsp;<button class="btn-sm btn-reject" onclick="kickUser('${p.id}')">拒否</button>`}
+      </div>`).join("");
+  } else {
+    document.getElementById("a-req-sec").style.display="none";
+  }
+
+  // 設定
+  if(!room.gameStarted){
+    document.getElementById("a-setup-sec").style.display="block";
+    document.querySelectorAll(".szbtn").forEach(b=>b.classList.toggle("on",parseInt(b.textContent)===room.teamSize));
+    const rem=approved.length%(room.teamSize||1);
+    document.getElementById("a-preview").innerHTML=`承認済み <strong>${approved.length}人</strong> ÷ <strong>${room.teamSize}人</strong> = 約 <strong>${Math.ceil(approved.length/(room.teamSize||1))}チーム</strong>${rem?` <span style="font-size:.75rem;color:#818cf8">（最終${rem}人）</span>`:""}`;
+    const sb=document.getElementById("a-shuffle");
+    sb.disabled=approved.length<2;
+    sb.style.opacity=approved.length<2?"0.4":"1";
+  } else {
+    document.getElementById("a-setup-sec").style.display="none";
+  }
+
+  // 承認済み
+  document.getElementById("a-approved-title").textContent=`承認済み参加者 (${approved.length}人)`;
+  document.getElementById("a-approved-list").innerHTML=approved.length===0?'<div class="empty">まだ参加者がいません</div>':approved.map(p=>{
+    const ti=teams.findIndex(t=>t.members&&Object.values(t.members).some(m=>m.id===p.id));
+    const col=ti>=0?COLORS[ti%COLORS.length]:null;
+    return `<div class="row">
+      <div class="av" style="background:${col?col.light:"#f3f4f6"};color:${col?col.text:"#6b7280"}">${p.name[0]}</div>
+      <div style="flex:1"><div style="font-size:.9rem;font-weight:500;color:#1f2937">${p.name}</div>${col?`<div style="font-size:.75rem;color:${col.text};font-weight:600">チーム ${ti+1}</div>`:""}</div>
+      <button class="btn-sm btn-kick" onclick="kickUser('${p.id}')">キック</button>
+    </div>`;
+  }).join("");
+
+  // チーム結果
+  if(room.gameStarted&&teams.length>0){
+    document.getElementById("a-teams-sec").style.display="block";
+    document.getElementById("a-teams-list").innerHTML=teams.map((t,i)=>{
+      const col=COLORS[i%COLORS.length];
+      const ms=Object.values(t.members||{});
+      return `<div style="background:${col.light};border:2px solid ${col.border};border-radius:.75rem;padding:.75rem 1rem;margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+          <span style="background:${col.bg};color:white;font-size:.8rem;font-weight:800;padding:.25rem .75rem;border-radius:9999px">チーム ${i+1}</span>
+          <span style="font-size:.8rem;color:${col.text};font-weight:600">${ms.length}人</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+          ${ms.map(m=>`<span style="background:white;color:${col.text};font-size:.75rem;padding:.2rem .6rem;border-radius:9999px">${m.name}</span>`).join("")}
+        </div>
+      </div>`;
+    }).join("");
+  } else {
+    document.getElementById("a-teams-sec").style.display="none";
+  }
+}
+
+async function setSize(n){await dbSet(`rooms/${roomCode}/teamSize`,n);}
+
+async function doShuffle(){
+  const room=await dbGet(`rooms/${roomCode}`);
+  const approved=Object.values(room.participants||{}).filter(p=>p.status==="approved");
+  if(approved.length<2)return;
+  const shuffled=[...approved].sort(()=>Math.random()-.5);
+  const sz=room.teamSize||5;
+  const teams={};
+  let ti=0;
+  for(let i=0;i<shuffled.length;i+=sz){
+    const chunk=shuffled.slice(i,i+sz);
+    const members={};
+    chunk.forEach(m=>members[m.id]=m);
+    teams[`team${ti}`]={id:`team${ti}`,members};
+    ti++;
+  }
+  await dbSet(`rooms/${roomCode}/teams`,teams);
+  await dbSet(`rooms/${roomCode}/gameStarted`,true);
+}
+
+function copyCode(){
+  navigator.clipboard?.writeText(roomCode).catch(()=>{});
+  document.getElementById("copy-btn").textContent="✓";
+  setTimeout(()=>document.getElementById("copy-btn").textContent="📋",2000);
+}
+
+async function exitRoom(){
+  if(confirm("ルームを終了しますか？")){
+    await dbSet(`rooms/${roomCode}`,null);
+    stopPoll();roomCode="";show("s-home");
+  }
+}
+
+async function approveUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");}
+async function kickUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"kicked");}
+async function addLate(id){
+  const room=await dbGet(`rooms/${roomCode}`);
+  const teams=room.teams?Object.entries(room.teams):[];
+  if(!teams.length)return;
+  const p=room.participants[id];
+  const smallest=teams.reduce((m,[k,t])=>{const cnt=Object.keys(t.members||{}).length;return cnt<m[1]?[k,cnt]:m;},[teams[0][0],Object.keys(teams[0][1].members||{}).length]);
+  await dbSet(`rooms/${roomCode}/teams/${smallest[0]}/members/${id}`,p);
+  await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");
+}
+
+show("s-home");
+</script>
 </body>
 </html>
