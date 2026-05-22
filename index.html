@@ -116,6 +116,7 @@ input:focus{border-color:#4f46e5}
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></div>
         <span id="a-req-title">入室申請</span>
+        <button onclick="approveAll()" style="margin-left:auto;background:#10b981;color:white;border:none;padding:.3rem .75rem;border-radius:.5rem;font-size:.75rem;font-weight:700;cursor:pointer">✅ 全員承認</button>
       </div>
       <div id="a-req-list"></div>
     </div>
@@ -403,6 +404,13 @@ async function exitRoom(){
   }
 }
 
+async function approveAll(){
+  const room=await dbGet(`rooms/${roomCode}`);
+  const waiting=Object.values(room.participants||{}).filter(p=>p.status==="waiting");
+  for(const p of waiting){
+    await dbSet(`rooms/${roomCode}/participants/${p.id}/status`,"approved");
+  }
+}
 async function approveUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");}
 async function kickUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"kicked");}
 async function addLate(id){
