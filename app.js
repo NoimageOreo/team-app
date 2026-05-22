@@ -1,6 +1,8 @@
 // Firebase設定
 const DB_URL = "https://divide-team-default-rtdb.firebaseio.com";
 
+window.onerror = (msg) => alert("エラー: " + msg);
+
 const COLORS = [
   {bg:"#3b82f6",light:"#eff6ff",border:"#bfdbfe",text:"#1d4ed8"},
   {bg:"#ef4444",light:"#fef2f2",border:"#fecaca",text:"#b91c1c"},
@@ -340,4 +342,4 @@ window.addLate = async (id) => {
   await dbSet(`rooms/${roomCode}/participants/${id}/status`, "approved");
 };
 
-showScreen("home"); 
+showScreen("home");
