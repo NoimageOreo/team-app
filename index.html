@@ -337,16 +337,18 @@ function renderAdmin(room){
     document.getElementById("a-req-sec").style.display="none";
   }
 
-  if(!room.gameStarted){
-    document.getElementById("a-setup-sec").style.display="block";
-    document.querySelectorAll(".szbtn").forEach(b=>b.classList.toggle("on",parseInt(b.textContent)===room.teamSize));
-    const rem=totalCount%(room.teamSize||1);
-    document.getElementById("a-preview").innerHTML=`参加人数 <strong>${totalCount}人</strong> ÷ <strong>${room.teamSize}人</strong> = 約 <strong>${Math.ceil(totalCount/(room.teamSize||1))}チーム</strong>${rem?` <span style="font-size:.75rem;color:#818cf8">（最終${rem}人）</span>`:""}`;
-    const sb=document.getElementById("a-shuffle");
-    sb.disabled=totalCount<2;sb.style.opacity=totalCount<2?"0.4":"1";
-  } else {
-    document.getElementById("a-setup-sec").style.display="none";
-  }
+  // 変更箇所ここから：チーム分け完了後も「チーム設定」パネルを常に表示する
+  document.getElementById("a-setup-sec").style.display="block";
+  document.querySelectorAll(".szbtn").forEach(b=>b.classList.toggle("on",parseInt(b.textContent)===room.teamSize));
+  const rem=totalCount%(room.teamSize||1);
+  document.getElementById("a-preview").innerHTML=`参加人数 <strong>${totalCount}人</strong> ÷ <strong>${room.teamSize}人</strong> = 約 <strong>${Math.ceil(totalCount/(room.teamSize||1))}チーム</strong>${rem?` <span style="font-size:.75rem;color:#818cf8">（最終${rem}人）</span>`:""}`;
+  
+  const sb=document.getElementById("a-shuffle");
+  sb.disabled=totalCount<2;
+  sb.style.opacity=totalCount<2?"0.4":"1";
+  // 初回のチーム分け後は、設定下の大きなボタンを隠す（チーム結果欄の「再シャッフル」ボタンを使ってもらうため）
+  sb.style.display = room.gameStarted ? "none" : "block";
+  // 変更箇所ここまで
 
   document.getElementById("a-approved-title").textContent=`承認済み参加者 (${approved.length}人)`;
   document.getElementById("a-approved-list").innerHTML=approved.length===0?'<div class="empty">まだ参加者がいません</div>':approved.map(p=>{
