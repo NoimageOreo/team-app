@@ -13,18 +13,14 @@ input:focus{border-color:#4f46e5}
 .btn-indigo{background:#4f46e5;color:white}
 .btn-green{background:#10b981;color:white}
 .error{background:#fef2f2;color:#dc2626;padding:.6rem;border-radius:.5rem;font-size:.8rem;text-align:center;margin-bottom:.75rem;display:none}
-/* tabs */
 .tabs{display:flex;border-radius:.75rem;overflow:hidden;border:1px solid #e5e7eb;margin-bottom:1.25rem}
 .tab{flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:white;color:#6b7280}
 .tab.on{background:#4f46e5;color:white}
-/* spinner */
 .spin{width:50px;height:50px;border:4px solid #fcd34d;border-top-color:transparent;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 1rem}
 @keyframes sp{to{transform:rotate(360deg)}}
-/* size buttons */
 .szbtns{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
 .szbtn{width:42px;height:42px;border:2px solid #e5e7eb;background:white;border-radius:.75rem;font-weight:700;cursor:pointer;color:#374151}
 .szbtn.on{background:#4f46e5;color:white;border-color:#4f46e5}
-/* cards */
 .card{background:white;border-radius:1.25rem;padding:1.25rem;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .row{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid #f3f4f6}
 .row:last-child{border-bottom:none}
@@ -109,7 +105,6 @@ input:focus{border-color:#4f46e5}
     </div>
   </div>
   <div style="max-width:500px;margin:0 auto;padding:1rem">
-    <div id="a-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:.75rem;border-radius:.75rem;font-size:.8rem;margin-bottom:.75rem"></div>
 
     <!-- 申請 -->
     <div id="a-req-sec" class="card" style="display:none">
@@ -128,14 +123,12 @@ input:focus{border-color:#4f46e5}
       </div>
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.5rem">1チームの人数</p>
       <div class="szbtns" id="sz-btns"></div>
+      <!-- 管理者参加トグル -->
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;background:#f8faff;border-radius:.75rem;padding:.75rem 1rem">
         <span style="font-size:.85rem;color:#374151;font-weight:600;flex:1">管理者もチームに参加する</span>
-        <label style="position:relative;display:inline-block;width:44px;height:24px">
-          <input type="checkbox" id="admin-join-toggle" checked style="opacity:0;width:0;height:0">
-          <span onclick="toggleAdminJoin()" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#4f46e5;border-radius:24px;transition:.3s" id="toggle-bg">
-            <span id="toggle-knob" style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;transform:translateX(20px)"></span>
-          </span>
-        </label>
+        <div onclick="toggleAdminJoin()" id="toggle-bg" style="position:relative;width:44px;height:24px;background:#4f46e5;border-radius:24px;cursor:pointer;transition:.3s">
+          <div id="toggle-knob" style="position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:23px;transition:.3s"></div>
+        </div>
       </div>
       <div id="a-preview" style="background:#eef2ff;border-radius:.75rem;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#4338ca;font-weight:600"></div>
       <button id="a-shuffle" onclick="doShuffle()" disabled style="width:100%;background:#4f46e5;color:white;border:none;padding:.9rem;border-radius:.75rem;font-size:.9rem;font-weight:700;cursor:pointer;opacity:.4">🔀 ランダムでチーム分けする</button>
@@ -164,8 +157,8 @@ input:focus{border-color:#4f46e5}
 </div>
 
 <script>
-const DB = "https://divide-team-default-rtdb.firebaseio.com";
-const COLORS = [
+const DB="https://divide-team-default-rtdb.firebaseio.com";
+const COLORS=[
   {bg:"#3b82f6",light:"#eff6ff",border:"#bfdbfe",text:"#1d4ed8"},
   {bg:"#ef4444",light:"#fef2f2",border:"#fecaca",text:"#b91c1c"},
   {bg:"#10b981",light:"#ecfdf5",border:"#a7f3d0",text:"#065f46"},
@@ -177,24 +170,25 @@ const COLORS = [
   {bg:"#14b8a6",light:"#f0fdfa",border:"#99f6e4",text:"#0f766e"},
   {bg:"#06b6d4",light:"#ecfeff",border:"#a5f3fc",text:"#0e7490"},
 ];
-const genCode = () => Math.random().toString(36).substring(2,6).toUpperCase();
-const genId = () => Math.random().toString(36).substring(2,10);
-let myId = sessionStorage.getItem("myId") || genId();
-sessionStorage.setItem("myId", myId);
-let roomCode = sessionStorage.getItem("roomCode") || "";
-let savedView = sessionStorage.getItem("view") || "";
-let savedName = sessionStorage.getItem("myName") || "";
-let pollTimer = null, currentTab = "create", myName = savedName;
+const genCode=()=>Math.random().toString(36).substring(2,6).toUpperCase();
+const genId=()=>Math.random().toString(36).substring(2,10);
+
+// セッション復元用
+let myId=sessionStorage.getItem("myId")||genId();
+sessionStorage.setItem("myId",myId);
+let roomCode=sessionStorage.getItem("roomCode")||"";
+let myName=sessionStorage.getItem("myName")||"";
+let isAdminSession=sessionStorage.getItem("isAdmin")==="true";
+
+let pollTimer=null,currentTab="create",adminJoin=true;
 
 async function dbGet(p){const r=await fetch(`${DB}/${p}.json`);return r.json();}
 async function dbSet(p,d){await fetch(`${DB}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});}
 
 function show(id){
-  ["s-home","s-waiting","s-participant","s-admin"].forEach(s=>{
-    document.getElementById(s).style.display="none";
-  });
+  ["s-home","s-waiting","s-participant","s-admin"].forEach(s=>document.getElementById(s).style.display="none");
   document.getElementById(id).style.display=(id==="s-home"||id==="s-waiting")?"flex":"block";
-  sessionStorage.setItem("view", id);
+  sessionStorage.setItem("currentScreen",id);
 }
 
 function switchTab(btn){
@@ -214,14 +208,15 @@ async function homeAction(){
   showErr("");
   if(!name)return showErr("名前を入力してください");
   myName=name;
-  sessionStorage.setItem("myName", name);
+  sessionStorage.setItem("myName",name);
   if(currentTab==="create"){
     const code=genCode();
     const data={adminId:myId,adminName:name,teamSize:5,participants:{},teams:{},gameStarted:false};
     await dbSet(`rooms/${code}`,data);
     roomCode=code;
-    sessionStorage.setItem("roomCode", code);
-    sessionStorage.setItem("isAdmin", "true");
+    sessionStorage.setItem("roomCode",code);
+    sessionStorage.setItem("isAdmin","true");
+    isAdminSession=true;
     startAdminPoll();
     show("s-admin");
   } else {
@@ -231,8 +226,9 @@ async function homeAction(){
     if(!room)return showErr("ルームが見つかりません");
     await dbSet(`rooms/${code}/participants/${myId}`,{id:myId,name,status:"waiting",joinedAt:Date.now()});
     roomCode=code;
-    sessionStorage.setItem("roomCode", code);
-    sessionStorage.setItem("isAdmin", "false");
+    sessionStorage.setItem("roomCode",code);
+    sessionStorage.setItem("isAdmin","false");
+    isAdminSession=false;
     document.getElementById("w-code").textContent=code;
     document.getElementById("w-name").textContent=name;
     show("s-waiting");
@@ -254,7 +250,12 @@ function startWaitingPoll(){
       show("s-participant");
       startParticipantPoll();
     }
-    if(me.status==="kicked"){stopPoll();roomCode="";restoreSession();showErr("管理者により退出させられました");}
+    if(me.status==="kicked"){
+      stopPoll();roomCode="";
+      sessionStorage.removeItem("roomCode");
+      show("s-home");
+      showErr("管理者により退出させられました");
+    }
   });
 }
 
@@ -298,14 +299,19 @@ function renderParticipant(room){
 function startParticipantPoll(){
   startPoll(async()=>{
     const me=await dbGet(`rooms/${roomCode}/participants/${myId}`);
-    if(!me||me.status==="kicked"){stopPoll();roomCode="";show("s-home");showErr("管理者により退出させられました");return;}
+    if(!me||me.status==="kicked"){
+      stopPoll();roomCode="";
+      sessionStorage.removeItem("roomCode");
+      show("s-home");
+      showErr("管理者により退出させられました");
+      return;
+    }
     const room=await dbGet(`rooms/${roomCode}`);
     if(room)renderParticipant(room);
   });
 }
 
 function startAdminPoll(){
-  // サイズボタン生成
   const szbtns=document.getElementById("sz-btns");
   szbtns.innerHTML=[2,3,4,5,6,7,8,10].map(n=>`<button class="szbtn${n===5?" on":""}" onclick="setSize(${n})">${n}</button>`).join("");
   startPoll(async()=>{
@@ -320,11 +326,11 @@ function renderAdmin(room){
   const approved=parts.filter(p=>p.status==="approved");
   const teams=room.teams?Object.values(room.teams):[];
   document.getElementById("a-code").textContent=roomCode;
+  const totalCount=adminJoin?approved.length+1:approved.length;
   document.getElementById("a-stats").textContent=`承認済み: ${approved.length}人 / 申請中: ${waiting.length}人`;
   document.getElementById("a-badge").textContent=room.gameStarted?"🏃 試合中":"⏳ 待機中";
   document.getElementById("a-badge").style.background=room.gameStarted?"#10b981":"#4f46e5";
 
-  // 申請
   if(waiting.length>0){
     document.getElementById("a-req-sec").style.display="block";
     document.getElementById("a-req-title").textContent=`入室申請 (${waiting.length}件)${room.gameStarted?" — 途中参加":""}`;
@@ -340,20 +346,18 @@ function renderAdmin(room){
     document.getElementById("a-req-sec").style.display="none";
   }
 
-  // 設定
   if(!room.gameStarted){
     document.getElementById("a-setup-sec").style.display="block";
     document.querySelectorAll(".szbtn").forEach(b=>b.classList.toggle("on",parseInt(b.textContent)===room.teamSize));
-    const rem=approved.length%(room.teamSize||1);
-    document.getElementById("a-preview").innerHTML=`承認済み <strong>${approved.length}人</strong> ÷ <strong>${room.teamSize}人</strong> = 約 <strong>${Math.ceil(approved.length/(room.teamSize||1))}チーム</strong>${rem?` <span style="font-size:.75rem;color:#818cf8">（最終${rem}人）</span>`:""}`;
+    const rem=totalCount%(room.teamSize||1);
+    document.getElementById("a-preview").innerHTML=`参加人数 <strong>${totalCount}人</strong> ÷ <strong>${room.teamSize}人</strong> = 約 <strong>${Math.ceil(totalCount/(room.teamSize||1))}チーム</strong>${rem?` <span style="font-size:.75rem;color:#818cf8">（最終${rem}人）</span>`:""}`;
     const sb=document.getElementById("a-shuffle");
-    sb.disabled=approved.length<2;
-    sb.style.opacity=approved.length<2?"0.4":"1";
+    sb.disabled=totalCount<2;
+    sb.style.opacity=totalCount<2?"0.4":"1";
   } else {
     document.getElementById("a-setup-sec").style.display="none";
   }
 
-  // 承認済み
   document.getElementById("a-approved-title").textContent=`承認済み参加者 (${approved.length}人)`;
   document.getElementById("a-approved-list").innerHTML=approved.length===0?'<div class="empty">まだ参加者がいません</div>':approved.map(p=>{
     const ti=teams.findIndex(t=>t.members&&Object.values(t.members).some(m=>m.id===p.id));
@@ -365,7 +369,6 @@ function renderAdmin(room){
     </div>`;
   }).join("");
 
-  // チーム結果
   if(room.gameStarted&&teams.length>0){
     document.getElementById("a-teams-sec").style.display="block";
     document.getElementById("a-teams-list").innerHTML=teams.map((t,i)=>{
@@ -386,22 +389,20 @@ function renderAdmin(room){
   }
 }
 
-async function setSize(n){await dbSet(`rooms/${roomCode}/teamSize`,n);}
-
-let adminJoin = true;
 function toggleAdminJoin(){
-  adminJoin = !adminJoin;
-  document.getElementById("toggle-bg").style.background = adminJoin ? "#4f46e5" : "#d1d5db";
-  document.getElementById("toggle-knob").style.transform = adminJoin ? "translateX(20px)" : "translateX(0)";
+  adminJoin=!adminJoin;
+  document.getElementById("toggle-bg").style.background=adminJoin?"#4f46e5":"#d1d5db";
+  document.getElementById("toggle-knob").style.left=adminJoin?"23px":"3px";
 }
+
+async function setSize(n){await dbSet(`rooms/${roomCode}/teamSize`,n);}
 
 async function doShuffle(){
   const room=await dbGet(`rooms/${roomCode}`);
-  const adminMember={id:myId,name:myName,status:"approved"};
   const base=Object.values(room.participants||{}).filter(p=>p.status==="approved");
-  const approved=adminJoin?[adminMember,...base]:base;
-  if(approved.length<2)return;
-  const shuffled=[...approved].sort(()=>Math.random()-.5);
+  const all=adminJoin?[{id:myId,name:myName,status:"approved"},...base]:base;
+  if(all.length<2)return;
+  const shuffled=[...all].sort(()=>Math.random()-.5);
   const sz=room.teamSize||5;
   const teams={};
   let ti=0;
@@ -426,42 +427,15 @@ async function exitRoom(){
   if(confirm("ルームを終了しますか？")){
     await dbSet(`rooms/${roomCode}`,null);
     stopPoll();roomCode="";
-    sessionStorage.removeItem("roomCode");
-    sessionStorage.removeItem("isAdmin");
-    sessionStorage.removeItem("view");
+    sessionStorage.clear();
     show("s-home");
-  }
-}
-
-// リロード時の復元
-async function restoreSession(){
-  if(!roomCode||!savedView)return show("s-home");
-  const room=await dbGet(`rooms/${roomCode}`);
-  if(!room){sessionStorage.removeItem("roomCode");return show("s-home");}
-  const isAdmin=sessionStorage.getItem("isAdmin")==="true";
-  if(isAdmin){
-    startAdminPoll();show("s-admin");
-  } else {
-    const me=room.participants?.[myId];
-    if(!me){return show("s-home");}
-    if(me.status==="approved"){
-      renderParticipant(room);show("s-participant");startParticipantPoll();
-    } else if(me.status==="waiting"){
-      document.getElementById("w-code").textContent=roomCode;
-      document.getElementById("w-name").textContent=myName;
-      show("s-waiting");startWaitingPoll();
-    } else {
-      show("s-home");
-    }
   }
 }
 
 async function approveAll(){
   const room=await dbGet(`rooms/${roomCode}`);
   const waiting=Object.values(room.participants||{}).filter(p=>p.status==="waiting");
-  for(const p of waiting){
-    await dbSet(`rooms/${roomCode}/participants/${p.id}/status`,"approved");
-  }
+  for(const p of waiting)await dbSet(`rooms/${roomCode}/participants/${p.id}/status`,"approved");
 }
 async function approveUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");}
 async function kickUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"kicked");}
@@ -475,7 +449,29 @@ async function addLate(id){
   await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");
 }
 
-show("s-home");
+// リロード時のセッション復元
+async function init(){
+  if(!roomCode){show("s-home");return;}
+  const room=await dbGet(`rooms/${roomCode}`);
+  if(!room){sessionStorage.clear();show("s-home");return;}
+  if(isAdminSession){
+    startAdminPoll();show("s-admin");
+  } else {
+    const me=room.participants?.[myId];
+    if(!me){sessionStorage.clear();show("s-home");return;}
+    if(me.status==="approved"){
+      renderParticipant(room);show("s-participant");startParticipantPoll();
+    } else if(me.status==="waiting"){
+      document.getElementById("w-code").textContent=roomCode;
+      document.getElementById("w-name").textContent=myName;
+      show("s-waiting");startWaitingPoll();
+    } else {
+      sessionStorage.clear();show("s-home");
+    }
+  }
+}
+
+init();
 </script>
 </body>
 </html>
