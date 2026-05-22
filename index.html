@@ -181,18 +181,20 @@ const genCode = () => Math.random().toString(36).substring(2,6).toUpperCase();
 const genId = () => Math.random().toString(36).substring(2,10);
 let myId = sessionStorage.getItem("myId") || genId();
 sessionStorage.setItem("myId", myId);
-let roomCode = "", pollTimer = null, currentTab = "create", myName = "";
+let roomCode = sessionStorage.getItem("roomCode") || "";
+let savedView = sessionStorage.getItem("view") || "";
+let savedName = sessionStorage.getItem("myName") || "";
+let pollTimer = null, currentTab = "create", myName = savedName;
 
 async function dbGet(p){const r=await fetch(`${DB}/${p}.json`);return r.json();}
 async function dbSet(p,d){await fetch(`${DB}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});}
 
 function show(id){
   ["s-home","s-waiting","s-participant","s-admin"].forEach(s=>{
-    const el=document.getElementById(s);
-    el.style.display="none";
+    document.getElementById(s).style.display="none";
   });
-  const t=document.getElementById(id);
-  t.style.display=(id==="s-home"||id==="s-waiting")?"flex":"block";
+  document.getElementById(id).style.display=(id==="s-home"||id==="s-waiting")?"flex":"block";
+  sessionStorage.setItem("view", id);
 }
 
 function switchTab(btn){
@@ -212,11 +214,14 @@ async function homeAction(){
   showErr("");
   if(!name)return showErr("名前を入力してください");
   myName=name;
+  sessionStorage.setItem("myName", name);
   if(currentTab==="create"){
     const code=genCode();
     const data={adminId:myId,adminName:name,teamSize:5,participants:{},teams:{},gameStarted:false};
     await dbSet(`rooms/${code}`,data);
     roomCode=code;
+    sessionStorage.setItem("roomCode", code);
+    sessionStorage.setItem("isAdmin", "true");
     startAdminPoll();
     show("s-admin");
   } else {
@@ -226,6 +231,8 @@ async function homeAction(){
     if(!room)return showErr("ルームが見つかりません");
     await dbSet(`rooms/${code}/participants/${myId}`,{id:myId,name,status:"waiting",joinedAt:Date.now()});
     roomCode=code;
+    sessionStorage.setItem("roomCode", code);
+    sessionStorage.setItem("isAdmin", "false");
     document.getElementById("w-code").textContent=code;
     document.getElementById("w-name").textContent=name;
     show("s-waiting");
@@ -247,7 +254,7 @@ function startWaitingPoll(){
       show("s-participant");
       startParticipantPoll();
     }
-    if(me.status==="kicked"){stopPoll();roomCode="";show("s-home");showErr("管理者により退出させられました");}
+    if(me.status==="kicked"){stopPoll();roomCode="";restoreSession();showErr("管理者により退出させられました");}
   });
 }
 
@@ -418,7 +425,34 @@ function copyCode(){
 async function exitRoom(){
   if(confirm("ルームを終了しますか？")){
     await dbSet(`rooms/${roomCode}`,null);
-    stopPoll();roomCode="";show("s-home");
+    stopPoll();roomCode="";
+    sessionStorage.removeItem("roomCode");
+    sessionStorage.removeItem("isAdmin");
+    sessionStorage.removeItem("view");
+    show("s-home");
+  }
+}
+
+// リロード時の復元
+async function restoreSession(){
+  if(!roomCode||!savedView)return show("s-home");
+  const room=await dbGet(`rooms/${roomCode}`);
+  if(!room){sessionStorage.removeItem("roomCode");return show("s-home");}
+  const isAdmin=sessionStorage.getItem("isAdmin")==="true";
+  if(isAdmin){
+    startAdminPoll();show("s-admin");
+  } else {
+    const me=room.participants?.[myId];
+    if(!me){return show("s-home");}
+    if(me.status==="approved"){
+      renderParticipant(room);show("s-participant");startParticipantPoll();
+    } else if(me.status==="waiting"){
+      document.getElementById("w-code").textContent=roomCode;
+      document.getElementById("w-name").textContent=myName;
+      show("s-waiting");startWaitingPoll();
+    } else {
+      show("s-home");
+    }
   }
 }
 
