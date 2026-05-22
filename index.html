@@ -65,6 +65,7 @@ input:focus{border-color:#4f46e5}
       <p id="w-code" style="font-size:2rem;font-weight:900;color:#b45309;letter-spacing:.3em"></p>
     </div>
     <p style="font-size:.75rem;color:#92400e;margin-top:.75rem">参加名: <strong id="w-name"></strong></p>
+    <button onclick="leaveRoom()" style="margin-top:1rem;background:none;border:none;color:#9ca3af;font-size:.8rem;cursor:pointer">🚪 退出する</button>
   </div>
 </div>
 
@@ -88,6 +89,7 @@ input:focus{border-color:#4f46e5}
       <h3 style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:.75rem">全チーム</h3>
       <div id="p-all"></div>
     </div>
+    <button onclick="leaveRoom()" style="width:100%;background:none;border:none;color:#9ca3af;font-size:.8rem;padding:.5rem;cursor:pointer;margin-top:.5rem">🚪 退出する</button>
   </div>
 </div>
 
@@ -123,7 +125,6 @@ input:focus{border-color:#4f46e5}
       </div>
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.5rem">1チームの人数</p>
       <div class="szbtns" id="sz-btns"></div>
-      <!-- 管理者参加トグル -->
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;background:#f8faff;border-radius:.75rem;padding:.75rem 1rem">
         <span style="font-size:.85rem;color:#374151;font-weight:600;flex:1">管理者もチームに参加する</span>
         <div onclick="toggleAdminJoin()" id="toggle-bg" style="position:relative;width:44px;height:24px;background:#4f46e5;border-radius:24px;cursor:pointer;transition:.3s">
@@ -173,13 +174,11 @@ const COLORS=[
 const genCode=()=>Math.random().toString(36).substring(2,6).toUpperCase();
 const genId=()=>Math.random().toString(36).substring(2,10);
 
-// セッション復元用
-let myId=sessionStorage.getItem("myId")||genId();
-sessionStorage.setItem("myId",myId);
-let roomCode=sessionStorage.getItem("roomCode")||"";
-let myName=sessionStorage.getItem("myName")||"";
-let isAdminSession=sessionStorage.getItem("isAdmin")==="true";
-
+let myId=localStorage.getItem("myId")||genId();
+localStorage.setItem("myId",myId);
+let roomCode=localStorage.getItem("roomCode")||"";
+let myName=localStorage.getItem("myName")||"";
+let isAdminSession=localStorage.getItem("isAdmin")==="true";
 let pollTimer=null,currentTab="create",adminJoin=true;
 
 async function dbGet(p){const r=await fetch(`${DB}/${p}.json`);return r.json();}
@@ -188,7 +187,6 @@ async function dbSet(p,d){await fetch(`${DB}/${p}.json`,{method:"PUT",headers:{"
 function show(id){
   ["s-home","s-waiting","s-participant","s-admin"].forEach(s=>document.getElementById(s).style.display="none");
   document.getElementById(id).style.display=(id==="s-home"||id==="s-waiting")?"flex":"block";
-  sessionStorage.setItem("currentScreen",id);
 }
 
 function switchTab(btn){
@@ -208,14 +206,14 @@ async function homeAction(){
   showErr("");
   if(!name)return showErr("名前を入力してください");
   myName=name;
-  sessionStorage.setItem("myName",name);
+  localStorage.setItem("myName",name);
   if(currentTab==="create"){
     const code=genCode();
     const data={adminId:myId,adminName:name,teamSize:5,participants:{},teams:{},gameStarted:false};
     await dbSet(`rooms/${code}`,data);
     roomCode=code;
-    sessionStorage.setItem("roomCode",code);
-    sessionStorage.setItem("isAdmin","true");
+    localStorage.setItem("roomCode",code);
+    localStorage.setItem("isAdmin","true");
     isAdminSession=true;
     startAdminPoll();
     show("s-admin");
@@ -226,8 +224,8 @@ async function homeAction(){
     if(!room)return showErr("ルームが見つかりません");
     await dbSet(`rooms/${code}/participants/${myId}`,{id:myId,name,status:"waiting",joinedAt:Date.now()});
     roomCode=code;
-    sessionStorage.setItem("roomCode",code);
-    sessionStorage.setItem("isAdmin","false");
+    localStorage.setItem("roomCode",code);
+    localStorage.setItem("isAdmin","false");
     isAdminSession=false;
     document.getElementById("w-code").textContent=code;
     document.getElementById("w-name").textContent=name;
@@ -251,10 +249,7 @@ function startWaitingPoll(){
       startParticipantPoll();
     }
     if(me.status==="kicked"){
-      stopPoll();roomCode="";
-      sessionStorage.removeItem("roomCode");
-      show("s-home");
-      showErr("管理者により退出させられました");
+      stopPoll();clearLocal();show("s-home");showErr("管理者により退出させられました");
     }
   });
 }
@@ -300,11 +295,7 @@ function startParticipantPoll(){
   startPoll(async()=>{
     const me=await dbGet(`rooms/${roomCode}/participants/${myId}`);
     if(!me||me.status==="kicked"){
-      stopPoll();roomCode="";
-      sessionStorage.removeItem("roomCode");
-      show("s-home");
-      showErr("管理者により退出させられました");
-      return;
+      stopPoll();clearLocal();show("s-home");showErr("管理者により退出させられました");return;
     }
     const room=await dbGet(`rooms/${roomCode}`);
     if(room)renderParticipant(room);
@@ -325,8 +316,8 @@ function renderAdmin(room){
   const waiting=parts.filter(p=>p.status==="waiting");
   const approved=parts.filter(p=>p.status==="approved");
   const teams=room.teams?Object.values(room.teams):[];
-  document.getElementById("a-code").textContent=roomCode;
   const totalCount=adminJoin?approved.length+1:approved.length;
+  document.getElementById("a-code").textContent=roomCode;
   document.getElementById("a-stats").textContent=`承認済み: ${approved.length}人 / 申請中: ${waiting.length}人`;
   document.getElementById("a-badge").textContent=room.gameStarted?"🏃 試合中":"⏳ 待機中";
   document.getElementById("a-badge").style.background=room.gameStarted?"#10b981":"#4f46e5";
@@ -352,8 +343,7 @@ function renderAdmin(room){
     const rem=totalCount%(room.teamSize||1);
     document.getElementById("a-preview").innerHTML=`参加人数 <strong>${totalCount}人</strong> ÷ <strong>${room.teamSize}人</strong> = 約 <strong>${Math.ceil(totalCount/(room.teamSize||1))}チーム</strong>${rem?` <span style="font-size:.75rem;color:#818cf8">（最終${rem}人）</span>`:""}`;
     const sb=document.getElementById("a-shuffle");
-    sb.disabled=totalCount<2;
-    sb.style.opacity=totalCount<2?"0.4":"1";
+    sb.disabled=totalCount<2;sb.style.opacity=totalCount<2?"0.4":"1";
   } else {
     document.getElementById("a-setup-sec").style.display="none";
   }
@@ -404,14 +394,12 @@ async function doShuffle(){
   if(all.length<2)return;
   const shuffled=[...all].sort(()=>Math.random()-.5);
   const sz=room.teamSize||5;
-  const teams={};
-  let ti=0;
+  const teams={};let ti=0;
   for(let i=0;i<shuffled.length;i+=sz){
     const chunk=shuffled.slice(i,i+sz);
     const members={};
     chunk.forEach(m=>members[m.id]=m);
-    teams[`team${ti}`]={id:`team${ti}`,members};
-    ti++;
+    teams[`team${ti}`]={id:`team${ti}`,members};ti++;
   }
   await dbSet(`rooms/${roomCode}/teams`,teams);
   await dbSet(`rooms/${roomCode}/gameStarted`,true);
@@ -423,13 +411,28 @@ function copyCode(){
   setTimeout(()=>document.getElementById("copy-btn").textContent="📋",2000);
 }
 
-async function exitRoom(){
-  if(confirm("ルームを終了しますか？")){
-    await dbSet(`rooms/${roomCode}`,null);
-    stopPoll();roomCode="";
-    sessionStorage.clear();
-    show("s-home");
+function clearLocal(){
+  localStorage.removeItem("roomCode");
+  localStorage.removeItem("isAdmin");
+  localStorage.removeItem("myName");
+  roomCode="";myName="";
+}
+
+async function leaveRoom(){
+  if(!confirm("退出しますか？"))return;
+  stopPoll();
+  if(roomCode&&myId){
+    await dbSet(`rooms/${roomCode}/participants/${myId}/status`,"kicked");
   }
+  clearLocal();
+  show("s-home");
+}
+
+async function exitRoom(){
+  if(!confirm("ルームを終了しますか？"))return;
+  await dbSet(`rooms/${roomCode}`,null);
+  stopPoll();clearLocal();
+  show("s-home");
 }
 
 async function approveAll(){
@@ -449,16 +452,15 @@ async function addLate(id){
   await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");
 }
 
-// リロード時のセッション復元
 async function init(){
   if(!roomCode){show("s-home");return;}
   const room=await dbGet(`rooms/${roomCode}`);
-  if(!room){sessionStorage.clear();show("s-home");return;}
+  if(!room){clearLocal();show("s-home");return;}
   if(isAdminSession){
     startAdminPoll();show("s-admin");
   } else {
     const me=room.participants?.[myId];
-    if(!me){sessionStorage.clear();show("s-home");return;}
+    if(!me){clearLocal();show("s-home");return;}
     if(me.status==="approved"){
       renderParticipant(room);show("s-participant");startParticipantPoll();
     } else if(me.status==="waiting"){
@@ -466,7 +468,7 @@ async function init(){
       document.getElementById("w-name").textContent=myName;
       show("s-waiting");startWaitingPoll();
     } else {
-      sessionStorage.clear();show("s-home");
+      clearLocal();show("s-home");
     }
   }
 }
