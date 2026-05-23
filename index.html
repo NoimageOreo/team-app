@@ -160,11 +160,9 @@ input:focus{border-color:#4f46e5}
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;background:#f8faff;border-radius:.75rem;padding:.75rem 1rem">
         <span style="font-size:.85rem;color:#374151;font-weight:600;flex:1">管理者もチームに参加する</span>
         <div onclick="toggleAdminJoin()" id="toggle-bg" style="position:relative;width:44px;height:24px;background:#4f46e5;border-radius:24px;cursor:pointer;transition:.3s">
-          
+        <div id="toggle-knob" style="position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:23px;transition:.3s"></div> 
       </div>
 
-
-          <div id="toggle-knob" style="position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:23px;transition:.3s"></div>
         </div>
       </div>
       <div id="a-preview" style="background:#eef2ff;border-radius:.75rem;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#4338ca;font-weight:600"></div>
@@ -869,7 +867,7 @@ function buildCourts(teams){
 
       // 同じチームが同時試合になるなら次試合へ
       busyTeams.clear();
-      
+
       const obj = {
         ...match,
         round: slot.round,
