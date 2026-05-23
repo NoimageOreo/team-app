@@ -758,11 +758,15 @@ function buildCourts(teams){
     refCount[k] = 0;
   });
 
-  allSlots.forEach(slot=>{
+  allSlots.forEach((slot, index)=>{
 
-    // このラウンドで試合してるチーム
+    // =========================
+    // 同タイミングで試合してるチームを全部取得
+    // =========================
+
     const playingTeams = new Set();
 
+    // 自分のslot
     slot.matches.forEach(m=>{
 
       playingTeams.add(m.t1);
@@ -770,7 +774,36 @@ function buildCourts(teams){
 
     });
 
-    // 試合してないチームのみ審判候補
+    // 前slot（同ラウンド）
+    const prev = allSlots[index - 1];
+
+    if(prev && prev.round === slot.round){
+
+      prev.matches.forEach(m=>{
+
+        playingTeams.add(m.t1);
+        playingTeams.add(m.t2);
+
+      });
+    }
+
+    // 次slot（同ラウンド）
+    const next = allSlots[index + 1];
+
+    if(next && next.round === slot.round){
+
+      next.matches.forEach(m=>{
+
+        playingTeams.add(m.t1);
+        playingTeams.add(m.t2);
+
+      });
+    }
+
+    // =========================
+    // 試合してないチームのみ候補
+    // =========================
+
     let candidates = keys.filter(
       k => !playingTeams.has(k)
     );
@@ -791,6 +824,7 @@ function buildCourts(teams){
     if(candidates.length === 0){
 
       slot.ref = null;
+
       return;
     }
 
@@ -840,7 +874,7 @@ function buildCourts(teams){
 
       }else{
 
-        // 全体で交互振り分け
+        // 交互振り分け
         if((court1.length + court2.length) % 2 === 0){
 
           obj.displayNum = `${court1Num}`;
