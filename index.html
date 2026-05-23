@@ -671,7 +671,6 @@ function buildCourts(teams){
       });
 
       const fixed = rotation[0];
-
       const rest = rotation.slice(1);
 
       rest.unshift(rest.pop());
@@ -683,7 +682,7 @@ function buildCourts(teams){
   }
 
   // =========================
-  // 男女別対応
+  // 男女別対応（修正版）
   // =========================
 
   let allSlots = [];
@@ -706,19 +705,25 @@ function buildCourts(teams){
       femaleSlots.length
     );
 
+    // 同じラウンドの男女試合を同時開催にする
     for(let i = 0; i < maxRounds; i++){
 
+      const mergedMatches = [];
+
       if(maleSlots[i]){
-        allSlots.push({
-          ...maleSlots[i],
-          gender: "male"
-        });
+        mergedMatches.push(...maleSlots[i].matches);
       }
 
       if(femaleSlots[i]){
+        mergedMatches.push(...femaleSlots[i].matches);
+      }
+
+      if(mergedMatches.length > 0){
+
         allSlots.push({
-          ...femaleSlots[i],
-          gender: "female"
+          matches: mergedMatches,
+          round: i + 1,
+          gender: "mixed"
         });
       }
     }
@@ -751,10 +756,13 @@ function buildCourts(teams){
       k => !playingTeams.has(k)
     );
 
-    if(gameMode === "separate" && slot.gender){
+    // 男女別時は同性優先
+    if(gameMode === "separate"){
+
+      const matchGender = teams[slot.matches[0]?.t1]?.gender;
 
       const genderCandidates = candidates.filter(
-        k => teams[k].gender === slot.gender
+        k => teams[k].gender === matchGender
       );
 
       if(genderCandidates.length > 0){
@@ -824,7 +832,6 @@ function buildCourts(teams){
     } : null
   };
 }
-
 function copyCode(){
   navigator.clipboard?.writeText(roomCode).catch(()=>{});
   document.getElementById("copy-btn").textContent="✓";
