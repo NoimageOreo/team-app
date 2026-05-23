@@ -50,6 +50,17 @@ input:focus{border-color:#4f46e5}
 }
 .match-row:last-child{border-bottom:none}
 .badge{font-size:.68rem;padding:.15rem .45rem;border-radius:9999px;font-weight:700;flex-shrink:0}
+
+/* タイマー用の追加スタイル */
+.timer-box { background: #1f2937; border-radius: 1rem; padding: 1.25rem; text-align: center; margin-bottom: 1rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,.3); transition: all 0.3s ease; }
+.timer-box.sticky { position: sticky; top: 1rem; z-index: 100; border: 2px solid #4f46e5; }
+.timer-time { font-size: 3.5rem; font-weight: 900; color: white; font-variant-numeric: tabular-nums; line-height: 1; margin: .5rem 0; letter-spacing: 2px;}
+.timer-ctrls { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
+.t-btn { flex:1; background: #374151; color: white; border: none; padding: .6rem; border-radius: .5rem; font-weight: 700; cursor: pointer; transition:.2s;}
+.t-btn:active { transform: scale(0.95); }
+.t-btn.primary { background: #10b981; }
+.t-btn.danger { background: #ef4444; }
+.t-btn.warning { background: #f59e0b; color: #fff;}
 </style>
 </head>
 <body>
@@ -93,6 +104,12 @@ input:focus{border-color:#4f46e5}
 
 <div id="s-participant" style="display:none;min-height:100vh;background:#f3f4f6;padding:1rem">
   <div style="max-width:400px;margin:0 auto">
+    
+    <div id="p-timer-sec" class="timer-box sticky" style="display:none;">
+      <div style="font-size:.8rem; color:#9ca3af; font-weight:700;">⏱ 試合タイマー</div>
+      <div id="p-timer-display" class="timer-time">05:00</div>
+    </div>
+
     <div id="p-hero" style="display:none;border-radius:1.5rem;padding:2rem;text-align:center;margin-bottom:1rem">
       <p style="color:rgba(255,255,255,.8);font-size:.75rem;font-weight:600;margin-bottom:.25rem">あなたのチーム</p>
       <p id="p-num" style="font-size:7rem;font-weight:900;color:white;line-height:1"></p>
@@ -132,6 +149,21 @@ input:focus{border-color:#4f46e5}
     </div>
   </div>
   <div style="max-width:500px;margin:0 auto;padding:1rem">
+
+    <div id="a-timer-sec" class="timer-box" style="display:none;">
+      <div style="font-size:.8rem; color:#9ca3af; font-weight:700;">⏱ 共有タイマー（全員と同期中）</div>
+      <div id="a-timer-display" class="timer-time">05:00</div>
+      <div class="timer-ctrls">
+        <button class="t-btn" onclick="setTimer(3)">3分</button>
+        <button class="t-btn" onclick="setTimer(5)">5分</button>
+        <button class="t-btn" onclick="setTimer(7)">7分</button>
+        <button class="t-btn" onclick="setTimer(10)">10分</button>
+      </div>
+      <div class="timer-ctrls">
+        <button id="btn-timer-start" class="t-btn primary" onclick="toggleTimer()">▶ スタート</button>
+        <button class="t-btn warning" onclick="resetTimer()">🔄 リセット</button>
+      </div>
+    </div>
 
     <div id="a-req-sec" class="card" style="display:none">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
@@ -292,8 +324,10 @@ let myGender=localStorage.getItem("myGender")||"male";
 let isAdminSession=localStorage.getItem("isAdmin")==="true";
 let pollTimer=null,currentTab="create";
 
-// 設定変数
+// 設定変数とタイマー変数
 let adminJoin=true, divMode="count", gameMode="mixed", courtNum=2;
+let timerState = { endTime: null, duration: 300000, baseDuration: 300000, isRunning: false };
+setInterval(updateTimerUI, 100);
 
 async function dbGet(p){const r=await fetch(`${DB}/${p}.json`);return r.json();}
 async function dbSet(p,d){await fetch(`${DB}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});}
@@ -333,7 +367,8 @@ async function homeAction(){
     await dbSet(`rooms/${code}`,{
       adminId:myId, adminName:name, teamSize:5, 
       gameMode:"mixed", courtNum:2, divMode:"count", adminJoin:true,
-      participants:{}, teams:{}, gameStarted:false
+      participants:{}, teams:{}, gameStarted:false,
+      timer: { endTime: null, duration: 300000, baseDuration: 300000, isRunning: false }
     });
     roomCode=code;
     localStorage.setItem("roomCode",code);localStorage.setItem("isAdmin","true");
@@ -379,7 +414,6 @@ function renderParticipant(room){
     document.getElementById("p-label").textContent=`チーム ${tNum(myKey)}`;
     document.getElementById("p-wait").style.display="none";
 
-    // 自分の試合をすべて抽出して時系列（slotIndex）に並べる
     let myMatches = [];
     const currentCourtNum = room.courtNum || 2;
     if(room.schedule){
@@ -391,9 +425,7 @@ function renderParticipant(room){
       }
     }
     
-    // 自分が出場、または審判をする試合だけに絞り込む
     myMatches = myMatches.filter(m => m.t1 === myKey || m.t2 === myKey || m.ref === myKey);
-    // 時系列（slotIndex）順に並び替え
     myMatches.sort((a,b) => a.slotIndex - b.slotIndex);
 
     document.getElementById("p-court").textContent = myMatches.length > 0 ? `📍 全 ${myMatches.length} 試合（スケジュールを確認）` : "";
@@ -409,7 +441,6 @@ function renderParticipant(room){
       </div>`).join("");
     document.getElementById("p-members-card").style.display="block";
 
-    // スケジュール表示（コート名バッジ付き）
     if(myMatches.length > 0){
       document.getElementById("p-schedule").innerHTML = renderMatches(myMatches, myKey);
       document.getElementById("p-schedule-card").style.display="block";
@@ -432,6 +463,8 @@ function renderParticipant(room){
     }).join("");
     document.getElementById("p-all-card").style.display="block";
   }
+  
+  syncTimerFromDB(room);
 }
 
 function renderMatches(matches,highlightKey=null){
@@ -441,7 +474,6 @@ function renderMatches(matches,highlightKey=null){
     const isRef=highlightKey&&m.ref===highlightKey;
     const courtCol = m.courtName === 'コート1' || m.courtName === 'コート' ? '#4f46e5' : '#0891b2';
     
-    // displayをblockに上書きして縦並び（2段）にする
     return `<div class="match-row" style="display:block; ${isPlay?'background:#fffbeb;border-radius:.5rem;padding:.4rem .5rem;':isRef?'background:#f0fdf4;border-radius:.5rem;padding:.4rem .5rem;':''}">
       <div style="display:flex; align-items:center; gap:.45rem;">
         <div style="min-width:58px; height:22px; border-radius:999px; background:#e5e7eb; display:flex; align-items:center; justify-content:center; font-size:.65rem; font-weight:800; color:#374151; flex-shrink:0; padding:0 .45rem;">
@@ -479,7 +511,89 @@ function startParticipantPoll(){
   });
 }
 
-// 設定変更時にDBに保存し、リロードしても状態を維持する
+// ---------------------------
+// 新機能：タイマー関連の処理
+// ---------------------------
+function syncTimerFromDB(room) {
+  if(room.timer) {
+    timerState = room.timer;
+  }
+  
+  const showTimer = !!room.gameStarted;
+  const pts = document.getElementById("p-timer-sec");
+  const ats = document.getElementById("a-timer-sec");
+  if(pts) pts.style.display = showTimer ? "block" : "none";
+  if(ats) ats.style.display = showTimer ? "block" : "none";
+
+  const btn = document.getElementById("btn-timer-start");
+  if(btn) {
+    if(timerState.isRunning) {
+      btn.innerHTML = "⏸ 一時停止";
+      btn.className = "t-btn danger";
+    } else {
+      btn.innerHTML = "▶ スタート";
+      btn.className = "t-btn primary";
+    }
+  }
+  updateTimerUI();
+}
+
+function updateTimerUI() {
+  let left = 0;
+  if(timerState.isRunning && timerState.endTime) {
+    left = Math.max(0, timerState.endTime - Date.now());
+  } else {
+    left = timerState.duration || 0;
+  }
+
+  const m = Math.floor(left / 60000).toString().padStart(2, '0');
+  const s = Math.floor((left % 60000) / 1000).toString().padStart(2, '0');
+  const str = `${m}:${s}`;
+  
+  const pDisp = document.getElementById("p-timer-display");
+  const aDisp = document.getElementById("a-timer-display");
+  if(pDisp) pDisp.textContent = str;
+  if(aDisp) aDisp.textContent = str;
+
+  // 0秒になったら赤くする演出
+  const color = (left === 0 && timerState.isRunning) ? "#ef4444" : "white";
+  if(pDisp) pDisp.style.color = color;
+  if(aDisp) aDisp.style.color = color;
+}
+
+async function setTimer(mins) {
+  const d = mins * 60 * 1000;
+  const newState = { endTime: null, duration: d, baseDuration: d, isRunning: false };
+  timerState = newState; updateTimerUI();
+  if(roomCode) await dbSet(`rooms/${roomCode}/timer`, newState);
+}
+
+async function toggleTimer() {
+  let newState = {};
+  if (timerState.isRunning) {
+    const left = Math.max(0, timerState.endTime - Date.now());
+    newState = { endTime: null, duration: left, baseDuration: timerState.baseDuration || 300000, isRunning: false };
+  } else {
+    const d = timerState.duration || 300000;
+    if(d === 0) return; // 0秒ならスタートしない
+    newState = { endTime: Date.now() + d, duration: d, baseDuration: timerState.baseDuration || 300000, isRunning: true };
+  }
+  timerState = newState; updateTimerUI();
+  syncTimerFromDB({timer: newState, gameStarted: true}); // 先行してUIを更新
+  if(roomCode) await dbSet(`rooms/${roomCode}/timer`, newState);
+}
+
+async function resetTimer() {
+  const d = timerState.baseDuration || 300000;
+  const newState = { endTime: null, duration: d, baseDuration: d, isRunning: false };
+  timerState = newState; updateTimerUI();
+  syncTimerFromDB({timer: newState, gameStarted: true});
+  if(roomCode) await dbSet(`rooms/${roomCode}/timer`, newState);
+}
+
+// ---------------------------
+// 既存の設定変更処理
+// ---------------------------
 async function setGameMode(mode){
   gameMode=mode;
   if(roomCode) await dbSet(`rooms/${roomCode}/gameMode`, mode);
@@ -650,6 +764,8 @@ function renderAdmin(room){
   } else {
     document.getElementById("a-sched-sec").style.display="none";
   }
+  
+  syncTimerFromDB(room);
 }
 
 async function doShuffle(){
@@ -680,7 +796,6 @@ async function doShuffle(){
       }
     }
   } else {
-    // 混合モード
     const males=[...all.filter(p=>p.gender==='male')].sort(()=>Math.random()-.5);
     const females=[...all.filter(p=>p.gender==='female')].sort(()=>Math.random()-.5);
     const tCount=divMode==="count"?Math.ceil(all.length/sz):sz;
@@ -698,11 +813,9 @@ async function doShuffle(){
   await dbSet(`rooms/${roomCode}/schedule`,schedule);
 }
 
-// 完全に書き直した「時間枠（スロット）ベース」のパズルアルゴリズム
 function buildCourts(teams){
   const keys = Object.keys(teams);
 
-  // ラウンドロビン生成関数
   function createRoundRobin(teamKeys){
     if(teamKeys.length <= 1) return [];
     let rotation = [...teamKeys];
@@ -731,7 +844,6 @@ function buildCourts(teams){
     return result;
   }
 
-  // 全試合のリスト化
   let allMatches = [];
   if(gameMode === "separate"){
     const maleKeys = keys.filter(k => teams[k].gender === "male");
@@ -749,7 +861,6 @@ function buildCourts(teams){
     rounds.forEach(r => allMatches.push(...r));
   }
 
-  // スロット（時間枠）の計算
   const slots = [];
   const remainingMatches = [...allMatches];
 
@@ -758,10 +869,9 @@ function buildCourts(teams){
     const busyTeams = new Set();
 
     for (let i = 0; i < remainingMatches.length; i++) {
-      if (currentSlot.length >= courtNum) break; // コート数でストップ
+      if (currentSlot.length >= courtNum) break; 
       const match = remainingMatches[i];
 
-      // まだこの時間枠で試合に入っていないチームなら採用
       if (!busyTeams.has(match.t1) && !busyTeams.has(match.t2)) {
         currentSlot.push(match);
         busyTeams.add(match.t1);
@@ -771,7 +881,6 @@ function buildCourts(teams){
       }
     }
 
-    // もし残りが全て「すでにこの枠で試合中のチーム」同士の試合だった場合の救済
     if (currentSlot.length === 0 && remainingMatches.length > 0) {
       const match = remainingMatches.shift();
       currentSlot.push(match);
@@ -780,7 +889,6 @@ function buildCourts(teams){
     slots.push(currentSlot);
   }
 
-  // 審判の割り当てとコート振り分け
   let court1 = [];
   let court2 = [];
   const refCount = {};
@@ -794,13 +902,10 @@ function buildCourts(teams){
     });
 
     slot.forEach((match, idx) => {
-      // 参加者画面の時系列ソート用に時間枠を記録
       match.slotIndex = slotIndex;
 
-      // --- 審判選び ---
-      let candidates = keys.filter(k => !busyTeams.has(k)); // 今休んでいるチームを探す
+      let candidates = keys.filter(k => !busyTeams.has(k)); 
 
-      // 男女別なら同性を優先
       if (gameMode === "separate" && candidates.length > 0) {
         const matchGender = teams[match.t1]?.gender;
         const sameGender = candidates.filter(k => teams[k].gender === matchGender);
@@ -808,26 +913,23 @@ function buildCourts(teams){
       }
 
       if (candidates.length > 0) {
-        // 審判回数が少ないチームを優先
         candidates.sort((a, b) => refCount[a] - refCount[b] || Math.random() - 0.5);
         const ref = candidates[0];
         match.ref = ref;
         refCount[ref]++;
       } else {
-        // 全チームが試合中で、休んでいるチームがいない場合
         match.ref = null; 
       }
 
-      // --- コートごとの試合番号を割り当て ---
       if (courtNum === 1) {
-        match.displayNum = court1.length + 1; // コート1の連番
+        match.displayNum = court1.length + 1; 
         court1.push(match);
       } else {
         if (idx === 0) {
-          match.displayNum = court1.length + 1; // コート1の連番
+          match.displayNum = court1.length + 1; 
           court1.push(match);
         } else {
-          match.displayNum = court2.length + 1; // コート2の連番
+          match.displayNum = court2.length + 1; 
           court2.push(match);
         }
       }
