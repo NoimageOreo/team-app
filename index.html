@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>どーなっつ チーム分けアプリ</title>
 <meta property="og:title" content="どーなっつ チーム分けアプリ" />
-<meta property="og:description" content="どーなっつ専用チーム分けアプリだよ～" />
+<meta property="og:description" content="どーなっつ専用チーム分け" />
 <meta property="og:type" content="website" />
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -619,118 +619,210 @@ async function doShuffle(){
 }
 
 function buildCourts(teams){
-  const keys=Object.keys(teams);
-  let allPairs = [];
 
-  function generatePairs(teamKeys) {
-    const pairs = [];
-    for(let i=0; i<teamKeys.length; i++){
-      for(let j=i+1; j<teamKeys.length; j++){
-        pairs.push({t1: teamKeys[i], t2: teamKeys[j]});
-      }
+  const keys = Object.keys(teams);
+
+  // =========================
+  // ラウンドロビン生成
+  // =========================
+
+  function createRoundRobin(teamKeys){
+
+    if(teamKeys.length <= 1){
+      return [];
     }
-    return pairs;
+
+    let rotation = [...teamKeys];
+
+    const isOdd = rotation.length % 2 === 1;
+
+    if(isOdd){
+      rotation.push("BYE");
+    }
+
+    const rounds = rotation.length - 1;
+    const half = rotation.length / 2;
+
+    const result = [];
+
+    for(let round = 0; round < rounds; round++){
+
+      let matches = [];
+
+      for(let i = 0; i < half; i++){
+
+        const t1 = rotation[i];
+        const t2 = rotation[rotation.length - 1 - i];
+
+        if(t1 === "BYE" || t2 === "BYE"){
+          continue;
+        }
+
+        matches.push({
+          t1,
+          t2,
+          round: round + 1
+        });
+      }
+
+      result.push({
+        matches,
+        round: round + 1
+      });
+
+      const fixed = rotation[0];
+
+      const rest = rotation.slice(1);
+
+      rest.unshift(rest.pop());
+
+      rotation = [fixed, ...rest];
+    }
+
+    return result;
   }
 
-  if(gameMode==="separate"){
-    const mK=keys.filter(k=>teams[k].gender==='male');
-    const fK=keys.filter(k=>teams[k].gender==='female');
-    const mPairs=generatePairs(mK);
-    const fPairs=generatePairs(fK);
+  // =========================
+  // 男女別対応
+  // =========================
 
-    let m=0, f=0;
-    while(m < mPairs.length || f < fPairs.length){
-      if(m < mPairs.length && (f === fPairs.length || (m * fPairs.length <= f * mPairs.length))){
-        allPairs.push(mPairs[m++]);
-      } else {
-        allPairs.push(fPairs[f++]);
+  let allSlots = [];
+
+  if(gameMode === "separate"){
+
+    const maleKeys = keys.filter(
+      k => teams[k].gender === "male"
+    );
+
+    const femaleKeys = keys.filter(
+      k => teams[k].gender === "female"
+    );
+
+    const maleSlots = createRoundRobin(maleKeys);
+    const femaleSlots = createRoundRobin(femaleKeys);
+
+    const maxRounds = Math.max(
+      maleSlots.length,
+      femaleSlots.length
+    );
+
+    for(let i = 0; i < maxRounds; i++){
+
+      if(maleSlots[i]){
+        allSlots.push({
+          ...maleSlots[i],
+          gender: "male"
+        });
+      }
+
+      if(femaleSlots[i]){
+        allSlots.push({
+          ...femaleSlots[i],
+          gender: "female"
+        });
       }
     }
-  } else {
-    allPairs = generatePairs(keys);
+
+  }else{
+
+    allSlots = createRoundRobin(keys);
   }
 
-  // スロット（時間枠）ごとに被りのない試合を割り当てるパズルアルゴリズム
-  const slots = [];
-  const remainingPairs = [...allPairs];
+  // =========================
+  // 審判回数均等化
+  // =========================
 
-  while (remainingPairs.length > 0) {
-    const currentSlot = [];
-    const involvedTeams = new Set();
+  const refCount = {};
 
-    for (let i = 0; i < remainingPairs.length; i++) {
-      if (currentSlot.length >= courtNum) break; // コート数分埋まったら次のスロットへ
-      const pair = remainingPairs[i];
-      // そのスロットでまだ試合に入っていないチームなら採用
-      if (!involvedTeams.has(pair.t1) && !involvedTeams.has(pair.t2)) {
-        currentSlot.push(pair);
-        involvedTeams.add(pair.t1);
-        involvedTeams.add(pair.t2);
-        remainingPairs.splice(i, 1);
-        i--;
-      }
-    }
+  keys.forEach(k=>{
+    refCount[k] = 0;
+  });
 
-    if (currentSlot.length === 0 && remainingPairs.length > 0) {
-      currentSlot.push(remainingPairs.shift());
-    }
+  allSlots.forEach(slot=>{
 
-    slots.push(currentSlot);
-  }
+    const playingTeams = new Set();
 
-  // 審判の割り当て（そのスロットで試合がないチームから選出）
-  const refCounts = {};
-  keys.forEach(k => refCounts[k] = 0);
-
-  slots.forEach(slot => {
-    const involvedTeams = new Set();
-    slot.forEach(match => {
-      involvedTeams.add(match.t1);
-      involvedTeams.add(match.t2);
+    slot.matches.forEach(m=>{
+      playingTeams.add(m.t1);
+      playingTeams.add(m.t2);
     });
 
-    slot.forEach(match => {
-      const gender = teams[match.t1].gender;
-      let candidates = keys.filter(k => !involvedTeams.has(k) && teams[k].gender === gender);
-      if (candidates.length === 0) {
-        candidates = keys.filter(k => !involvedTeams.has(k));
+    let candidates = keys.filter(
+      k => !playingTeams.has(k)
+    );
+
+    if(gameMode === "separate" && slot.gender){
+
+      const genderCandidates = candidates.filter(
+        k => teams[k].gender === slot.gender
+      );
+
+      if(genderCandidates.length > 0){
+        candidates = genderCandidates;
+      }
+    }
+
+    candidates.sort((a,b)=>{
+
+      if(refCount[a] !== refCount[b]){
+        return refCount[a] - refCount[b];
       }
 
-      if (candidates.length > 0) {
-        candidates.sort((a, b) => refCounts[a] - refCounts[b]);
-        const ref = candidates[0];
-        match.ref = ref;
-        involvedTeams.add(ref);
-        refCounts[ref]++;
-      } else {
-        match.ref = null;
+      return Math.random() - 0.5;
+    });
+
+    slot.ref = candidates[0] || null;
+
+    if(slot.ref){
+      refCount[slot.ref]++;
+    }
+  });
+
+  // =========================
+  // コート割り当て
+  // =========================
+
+  let court1 = [];
+  let court2 = [];
+
+  let matchNum = 1;
+
+  allSlots.forEach(slot => {
+
+    slot.matches.forEach((match,index) => {
+
+      const obj = {
+        ...match,
+        ref: slot.ref || null,
+        num: matchNum++,
+        round: slot.round
+      };
+
+      if(courtNum === 1){
+
+        court1.push(obj);
+
+      }else{
+
+        if(index % 2 === 0){
+          court1.push(obj);
+        }else{
+          court2.push(obj);
+        }
       }
     });
   });
 
-  // スロットを順番にコートに割り当てる
-  let c1Matches = [], c2Matches = [];
-  let globalMatchNum = 1;
-
-  slots.forEach(slot => {
-    if (slot[0]) {
-      slot[0].num = globalMatchNum++;
-      c1Matches.push(slot[0]);
-    }
-    if (slot[1] && courtNum > 1) {
-      slot[1].num = globalMatchNum++;
-      c2Matches.push(slot[1]);
-    }
-  });
-
-  if (courtNum === 1) {
-     return { court1: { teamKeys: keys, matches: c1Matches } };
-  } else {
-     return {
-       court1: { teamKeys: keys, matches: c1Matches },
-       court2: { teamKeys: keys, matches: c2Matches }
-     };
-  }
+  return {
+    court1:{
+      teamKeys: keys,
+      matches: court1
+    },
+    court2: courtNum === 2 ? {
+      teamKeys: keys,
+      matches: court2
+    } : null
+  };
 }
 
 function copyCode(){
@@ -765,13 +857,64 @@ async function approveAll(){
 async function approveUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");}
 async function kickUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"kicked");}
 async function addLate(id){
-  const room=await dbGet(`rooms/${roomCode}`);
-  const entries=Object.entries(room.teams||{});
-  if(!entries.length)return;
-  const p=room.participants[id];
-  const [sk]=entries.reduce(([mk,mv],[k,t])=>Object.keys(t.members||{}).length<Object.keys(mv.members||{}).length?[k,t]:[mk,mv]);
-  await dbSet(`rooms/${roomCode}/teams/${sk}/members/${id}`,p);
-  await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");
+
+  const room = await dbGet(`rooms/${roomCode}`);
+
+  const participant = room.participants[id];
+
+  if(!participant) return;
+
+  const teams = room.teams || {};
+
+  const entries = Object.entries(teams);
+
+  if(entries.length === 0) return;
+
+  let candidates = entries;
+
+  if(room.gameMode === "separate"){
+
+    candidates = entries.filter(([k,t])=>{
+      return t.gender === participant.gender;
+    });
+  }
+
+  if(candidates.length === 0){
+
+    alert("追加できるチームがありません");
+
+    return;
+  }
+
+  candidates.sort((a,b)=>{
+
+    const aCount = Object.keys(a[1].members || {}).length;
+    const bCount = Object.keys(b[1].members || {}).length;
+
+    return aCount - bCount;
+  });
+
+  const [targetKey,targetTeam] = candidates[0];
+
+  const updatedMembers = {
+    ...(targetTeam.members || {}),
+    [participant.id]: {
+      ...participant,
+      lateJoin: true
+    }
+  };
+
+  await dbSet(
+    `rooms/${roomCode}/teams/${targetKey}/members`,
+    updatedMembers
+  );
+
+  await dbSet(
+    `rooms/${roomCode}/participants/${id}/status`,
+    "approved"
+  );
+
+  alert(`チーム ${tNum(targetKey)} に追加しました`);
 }
 
 async function init(){
