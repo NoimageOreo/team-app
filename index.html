@@ -160,49 +160,10 @@ input:focus{border-color:#4f46e5}
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;background:#f8faff;border-radius:.75rem;padding:.75rem 1rem">
         <span style="font-size:.85rem;color:#374151;font-weight:600;flex:1">管理者もチームに参加する</span>
         <div onclick="toggleAdminJoin()" id="toggle-bg" style="position:relative;width:44px;height:24px;background:#4f46e5;border-radius:24px;cursor:pointer;transition:.3s">
-          let manualGender = "male";
+          
+      </div>
 
-function setManualGender(g){
 
-  manualGender = g;
-
-  document.getElementById("manual-male").className =
-    "tgl" + (g === "male" ? " on-blue on" : "");
-
-  document.getElementById("manual-female").className =
-    "tgl" + (g === "female" ? " on-pink on" : "");
-}
-
-async function addManualPlayer(){
-
-  const name = document
-    .getElementById("manual-name")
-    .value
-    .trim();
-
-  if(!name){
-
-    alert("名前を入力してください");
-
-    return;
-  }
-
-  const id = "manual_" + genId();
-
-  await dbSet(
-    `rooms/${roomCode}/participants/${id}`,
-    {
-      id,
-      name,
-      gender: manualGender,
-      status: "approved",
-      manual: true,
-      joinedAt: Date.now()
-    }
-  );
-
-  document.getElementById("manual-name").value = "";
-}
           <div id="toggle-knob" style="position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:23px;transition:.3s"></div>
         </div>
       </div>
@@ -273,6 +234,50 @@ async function addManualPlayer(){
 </div>
 
 <script>
+  let manualGender = "male";
+
+function setManualGender(g){
+
+  manualGender = g;
+
+  document.getElementById("manual-male").className =
+    "tgl" + (g === "male" ? " on-blue on" : "");
+
+  document.getElementById("manual-female").className =
+    "tgl" + (g === "female" ? " on-pink on" : "");
+}
+
+async function addManualPlayer(){
+
+  const name = document
+    .getElementById("manual-name")
+    .value
+    .trim();
+
+  if(!name){
+
+    alert("名前を入力してください");
+
+    return;
+  }
+
+  const id = "manual_" + genId();
+
+  await dbSet(
+    `rooms/${roomCode}/participants/${id}`,
+    {
+      id,
+      name,
+      gender: manualGender,
+      status: "approved",
+      manual: true,
+      joinedAt: Date.now()
+    }
+  );
+
+  document.getElementById("manual-name").value = "";
+}
+
 const DB="https://divide-team-default-rtdb.firebaseio.com";
 const COLORS=[
   {bg:"#3b82f6",light:"#eff6ff",border:"#bfdbfe",text:"#1d4ed8"},
@@ -447,7 +452,7 @@ function renderMatches(matches,highlightKey=null){
     const courtCol = m.courtName === 'コート1' || m.courtName === 'コート' ? '#4f46e5' : '#0891b2';
     
     return `<div class="match-row" style="${isPlay?'background:#fffbeb;border-radius:.5rem;padding:.3rem .5rem;':isRef?'background:#f0fdf4;border-radius:.5rem;padding:.3rem .5rem;':''}">
-      <div style="width:22px;height:22px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#374151;flex-shrink:0"><div style="
+      <div style="
   min-width:58px;
   height:22px;
   border-radius:999px;
@@ -461,6 +466,7 @@ function renderMatches(matches,highlightKey=null){
   flex-shrink:0;
   padding:0 .45rem;
 ">
+
   第${m.displayNum || m.num}試合
 </div>
       ${m.courtName ? `<div style="font-size:.65rem;font-weight:800;color:white;background:${courtCol};padding:.15rem .4rem;border-radius:.25rem;margin-right:.25rem;flex-shrink:0">${m.courtName}</div>` : ''}
