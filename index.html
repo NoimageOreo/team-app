@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>どーなっつ チーム分けアプリ</title>
 <meta property="og:title" content="どーなっつ チーム分けアプリ" />
-<meta property="og:description" content="どーなっつ専用チーム分けアプリだよ～" />
+<meta property="og:description" content="どーなっつ専用チーム分け" />
 <meta property="og:type" content="website" />
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -46,7 +46,6 @@ input:focus{border-color:#4f46e5}
 </head>
 <body>
 
-<!-- HOME -->
 <div id="s-home" style="display:none;min-height:100vh;background:linear-gradient(135deg,#3730a3,#7c3aed);align-items:center;justify-content:center;padding:1rem">
   <div style="background:white;border-radius:1.5rem;padding:2rem;width:100%;max-width:360px;box-shadow:0 20px 40px rgba(0,0,0,.3)">
     <div style="text-align:center;font-size:3rem;margin-bottom:.5rem">👥</div>
@@ -70,7 +69,6 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
-<!-- WAITING -->
 <div id="s-waiting" style="display:none;min-height:100vh;background:linear-gradient(135deg,#fffbeb,#fef3c7);align-items:center;justify-content:center;padding:1rem">
   <div style="background:white;border-radius:1.5rem;padding:2.5rem 2rem;text-align:center;max-width:320px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.1)">
     <div class="spin"></div>
@@ -85,7 +83,6 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
-<!-- PARTICIPANT -->
 <div id="s-participant" style="display:none;min-height:100vh;background:#f3f4f6;padding:1rem">
   <div style="max-width:400px;margin:0 auto">
     <div id="p-hero" style="display:none;border-radius:1.5rem;padding:2rem;text-align:center;margin-bottom:1rem">
@@ -114,7 +111,6 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
-<!-- ADMIN -->
 <div id="s-admin" style="display:none;min-height:100vh;background:#f3f4f6;padding-bottom:2rem">
   <div style="background:#4338ca;color:white;padding:1.25rem 1rem 1.5rem">
     <div style="max-width:500px;margin:0 auto">
@@ -142,16 +138,19 @@ input:focus{border-color:#4f46e5}
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#4f46e5"></div>チーム設定
       </div>
+      
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem">試合モード</p>
       <div class="tgl-grp" style="margin-bottom:1rem">
         <button class="tgl on" id="mode-mixed" onclick="setGameMode('mixed')">🔀 混合</button>
         <button class="tgl" id="mode-sep" onclick="setGameMode('separate')">⚥ 男女別</button>
       </div>
+
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem">使用コート数</p>
       <div class="tgl-grp" style="margin-bottom:1rem">
         <button class="tgl" id="court-1" onclick="setCourtNum(1)">1コート（全体）</button>
         <button class="tgl on" id="court-2" onclick="setCourtNum(2)">2コート</button>
       </div>
+
       <div style="display:flex;border-radius:.75rem;overflow:hidden;border:1px solid #e5e7eb;margin-bottom:1rem">
         <button id="dc-btn" onclick="setDivMode('count')" style="flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:#4f46e5;color:white">👤 人数で分ける</button>
         <button id="dt-btn" onclick="setDivMode('team')" style="flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:white;color:#6b7280">🏷 チーム数で分ける</button>
@@ -220,7 +219,9 @@ let myName=localStorage.getItem("myName")||"";
 let myGender=localStorage.getItem("myGender")||"male";
 let isAdminSession=localStorage.getItem("isAdmin")==="true";
 let pollTimer=null,currentTab="create";
-let adminJoin=true,divMode="count",gameMode="mixed",courtNum=2;
+
+// 設定変数
+let adminJoin=true, divMode="count", gameMode="mixed", courtNum=2;
 
 async function dbGet(p){const r=await fetch(`${DB}/${p}.json`);return r.json();}
 async function dbSet(p,d){await fetch(`${DB}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});}
@@ -241,7 +242,8 @@ function switchTab(btn){
 }
 
 function selectGender(g){
-  myGender=g;localStorage.setItem("myGender",g);
+  myGender=g;
+  localStorage.setItem("myGender",g);
   document.getElementById("g-male").className="tgl"+(g==="male"?" on-blue on":"");
   document.getElementById("g-female").className="tgl"+(g==="female"?" on-pink on":"");
 }
@@ -256,7 +258,11 @@ async function homeAction(){
   myName=name;localStorage.setItem("myName",name);
   if(currentTab==="create"){
     const code=genCode();
-    await dbSet(`rooms/${code}`,{adminId:myId,adminName:name,teamSize:5,gameMode:"mixed",courtNum:2,divMode:"count",adminJoin:true,participants:{},teams:{},gameStarted:false});
+    await dbSet(`rooms/${code}`,{
+      adminId:myId, adminName:name, teamSize:5, 
+      gameMode:"mixed", courtNum:2, divMode:"count", adminJoin:true,
+      participants:{}, teams:{}, gameStarted:false
+    });
     roomCode=code;
     localStorage.setItem("roomCode",code);localStorage.setItem("isAdmin","true");
     isAdminSession=true;startAdminPoll();show("s-admin");
@@ -291,60 +297,67 @@ function renderParticipant(room){
   const teams=room.teams||{};
   const teamKeys=Object.keys(teams);
   const myKey=teamKeys.find(k=>teams[k].members&&Object.values(teams[k].members).some(m=>m.id===myId));
-  if(!myKey||!room.gameStarted)return;
 
-  const myTeam=teams[myKey];
-  const c=tCol(myKey);
-  const hero=document.getElementById("p-hero");
-  hero.style.display="block";hero.style.background=c.bg;
-  document.getElementById("p-num").textContent=tNum(myKey);
-  document.getElementById("p-label").textContent=`チーム ${tNum(myKey)}`;
-  document.getElementById("p-wait").style.display="none";
+  if(myKey&&room.gameStarted){
+    const myTeam=teams[myKey];
+    const c=tCol(myKey);
+    const hero=document.getElementById("p-hero");
+    hero.style.display="block";hero.style.background=c.bg;
+    document.getElementById("p-num").textContent=tNum(myKey);
+    document.getElementById("p-label").textContent=`チーム ${tNum(myKey)}`;
+    document.getElementById("p-wait").style.display="none";
 
-  // 自分が関わる試合を全コートから収集
-  const cNum=room.courtNum||2;
-  let myMatches=[];
-  if(room.schedule){
-    (room.schedule.court1?.matches||[]).forEach(m=>myMatches.push({...m,courtName:cNum===1?'コート':'コート1'}));
-    (room.schedule.court2?.matches||[]).forEach(m=>myMatches.push({...m,courtName:'コート2'}));
+    // 自分の試合をすべて抽出して時系列に並べる
+    let myMatches = [];
+    const currentCourtNum = room.courtNum || 2;
+    if(room.schedule){
+      if(room.schedule.court1?.matches){
+        room.schedule.court1.matches.forEach(m => myMatches.push({...m, courtName: currentCourtNum===1?'コート':'コート1'}));
+      }
+      if(room.schedule.court2?.matches){
+        room.schedule.court2.matches.forEach(m => myMatches.push({...m, courtName: 'コート2'}));
+      }
+    }
+    // 自分が出場、または審判をする試合だけに絞り込む
+    myMatches = myMatches.filter(m => m.t1 === myKey || m.t2 === myKey || m.ref === myKey);
+    myMatches.sort((a,b) => a.num - b.num);
+
+    document.getElementById("p-court").textContent = myMatches.length > 0 ? `📍 全 ${myMatches.length} 試合（スケジュールを確認）` : "";
+    
+    const mems=Object.values(myTeam.members||{});
+    document.getElementById("p-member-title").textContent=`あなたのチームメンバー（${mems.length}人）`;
+    document.getElementById("p-members").innerHTML=mems.map(m=>`
+      <div class="row">
+        <div class="av" style="background:${c.bg}">${m.name[0]}</div>
+        <span style="flex:1;font-size:.9rem;color:#1f2937">${m.name}</span>
+        <span style="font-size:.75rem">${m.gender==='male'?'👦':'👧'}</span>
+        ${m.id===myId?'<span style="font-size:.7rem;background:#d1fae5;color:#065f46;padding:.2rem .5rem;border-radius:9999px">あなた</span>':""}
+      </div>`).join("");
+    document.getElementById("p-members-card").style.display="block";
+
+    // スケジュール表示（コート名バッジ付き）
+    if(myMatches.length > 0){
+      document.getElementById("p-schedule").innerHTML = renderMatches(myMatches, myKey);
+      document.getElementById("p-schedule-card").style.display="block";
+    } else {
+      document.getElementById("p-schedule-card").style.display="none";
+    }
+
+    document.getElementById("p-all").innerHTML=teamKeys.map(k=>{
+      const t=teams[k];const col=tCol(k);const ms=Object.values(t.members||{});
+      return `<div style="margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+          <span style="background:${col.bg};color:white;font-size:.75rem;font-weight:700;padding:.2rem .75rem;border-radius:9999px">チーム ${tNum(k)}</span>
+          <span style="font-size:.75rem;color:${col.text};font-weight:600">${ms.length}人</span>
+          ${t.gender==='male'?'<span style="font-size:.7rem;color:#3b82f6">👦男子</span>':t.gender==='female'?'<span style="font-size:.7rem;color:#ec4899">👧女子</span>':''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;padding-left:.5rem">
+          ${ms.map(m=>`<span style="background:${col.light};color:${col.text};font-size:.75rem;padding:.2rem .6rem;border-radius:9999px">${m.name}${m.id===myId?" 👈":""}</span>`).join("")}
+        </div>
+      </div>`;
+    }).join("");
+    document.getElementById("p-all-card").style.display="block";
   }
-  myMatches=myMatches.filter(m=>m.t1===myKey||m.t2===myKey||m.ref===myKey);
-  myMatches.sort((a,b)=>a.num-b.num);
-
-  // コートバッジ表示
-  const myCourtNames=[...new Set(myMatches.filter(m=>m.t1===myKey||m.t2===myKey).map(m=>m.courtName))];
-  document.getElementById("p-court").textContent=myCourtNames.length?`📍 ${myCourtNames.join(' / ')}`:"";
-
-  const mems=Object.values(myTeam.members||{});
-  document.getElementById("p-member-title").textContent=`あなたのチームメンバー（${mems.length}人）`;
-  document.getElementById("p-members").innerHTML=mems.map(m=>`
-    <div class="row">
-      <div class="av" style="background:${c.bg}">${m.name[0]}</div>
-      <span style="flex:1;font-size:.9rem;color:#1f2937">${m.name}</span>
-      <span style="font-size:.75rem">${m.gender==='male'?'👦':'👧'}</span>
-      ${m.id===myId?'<span style="font-size:.7rem;background:#d1fae5;color:#065f46;padding:.2rem .5rem;border-radius:9999px">あなた</span>':""}
-    </div>`).join("");
-  document.getElementById("p-members-card").style.display="block";
-
-  if(myMatches.length>0){
-    document.getElementById("p-schedule").innerHTML=renderMatches(myMatches,myKey);
-    document.getElementById("p-schedule-card").style.display="block";
-  }
-
-  document.getElementById("p-all").innerHTML=teamKeys.map(k=>{
-    const t=teams[k];const col=tCol(k);const ms=Object.values(t.members||{});
-    return `<div style="margin-bottom:.75rem">
-      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
-        <span style="background:${col.bg};color:white;font-size:.75rem;font-weight:700;padding:.2rem .75rem;border-radius:9999px">チーム ${tNum(k)}</span>
-        <span style="font-size:.75rem;color:${col.text};font-weight:600">${ms.length}人</span>
-        ${t.gender==='male'?'<span style="font-size:.7rem;color:#3b82f6">👦男子</span>':t.gender==='female'?'<span style="font-size:.7rem;color:#ec4899">👧女子</span>':''}
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:.4rem;padding-left:.5rem">
-        ${ms.map(m=>`<span style="background:${col.light};color:${col.text};font-size:.75rem;padding:.2rem .6rem;border-radius:9999px">${m.name}${m.id===myId?" 👈":""}</span>`).join("")}
-      </div>
-    </div>`;
-  }).join("");
-  document.getElementById("p-all-card").style.display="block";
 }
 
 function renderMatches(matches,highlightKey=null){
@@ -352,10 +365,11 @@ function renderMatches(matches,highlightKey=null){
     const c1=tCol(m.t1),c2=tCol(m.t2);
     const isPlay=highlightKey&&(m.t1===highlightKey||m.t2===highlightKey);
     const isRef=highlightKey&&m.ref===highlightKey;
-    const courtCol=(!m.courtName||m.courtName==='コート'||m.courtName==='コート1')?"#4338ca":"#0891b2";
+    const courtCol = m.courtName === 'コート1' || m.courtName === 'コート' ? '#4f46e5' : '#0891b2';
+    
     return `<div class="match-row" style="${isPlay?'background:#fffbeb;border-radius:.5rem;padding:.3rem .5rem;':isRef?'background:#f0fdf4;border-radius:.5rem;padding:.3rem .5rem;':''}">
-      <div style="width:22px;height:22px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#374151;flex-shrink:0">${m.displayNum||m.num}</div>
-      ${m.courtName?`<div style="font-size:.65rem;font-weight:800;color:white;background:${courtCol};padding:.15rem .4rem;border-radius:.25rem;flex-shrink:0">${m.courtName}</div>`:''}
+      <div style="width:22px;height:22px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#374151;flex-shrink:0">${m.num}</div>
+      ${m.courtName ? `<div style="font-size:.65rem;font-weight:800;color:white;background:${courtCol};padding:.15rem .4rem;border-radius:.25rem;margin-right:.25rem;flex-shrink:0">${m.courtName}</div>` : ''}
       <div style="flex:1">
         <span style="font-weight:700;color:${c1.bg}">チーム${tNum(m.t1)}</span>
         <span style="color:#9ca3af;margin:0 .25rem">vs</span>
@@ -377,22 +391,22 @@ function startParticipantPoll(){
   });
 }
 
-// === 設定変更（DBに保存） ===
+// 設定変更時にDBに保存し、リロードしても状態を維持する
 async function setGameMode(mode){
   gameMode=mode;
-  if(roomCode)await dbSet(`rooms/${roomCode}/gameMode`,mode);
+  if(roomCode) await dbSet(`rooms/${roomCode}/gameMode`, mode);
   document.getElementById("mode-mixed").className="tgl"+(mode==="mixed"?" on":"");
   document.getElementById("mode-sep").className="tgl"+(mode==="separate"?" on":"");
 }
 async function setCourtNum(num){
   courtNum=num;
-  if(roomCode)await dbSet(`rooms/${roomCode}/courtNum`,num);
+  if(roomCode) await dbSet(`rooms/${roomCode}/courtNum`, num);
   document.getElementById("court-1").className="tgl"+(num===1?" on":"");
   document.getElementById("court-2").className="tgl"+(num===2?" on":"");
 }
 async function setDivMode(mode){
   divMode=mode;
-  if(roomCode)await dbSet(`rooms/${roomCode}/divMode`,mode);
+  if(roomCode) await dbSet(`rooms/${roomCode}/divMode`, mode);
   document.getElementById("dc-btn").style.cssText=`flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:${mode==="count"?"#4f46e5":"white"};color:${mode==="count"?"white":"#6b7280"}`;
   document.getElementById("dt-btn").style.cssText=`flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:${mode==="team"?"#4f46e5":"white"};color:${mode==="team"?"white":"#6b7280"}`;
   document.getElementById("sz-label").textContent=mode==="count"?"1チームの人数":"チーム数";
@@ -400,43 +414,19 @@ async function setDivMode(mode){
 }
 async function toggleAdminJoin(){
   adminJoin=!adminJoin;
-  if(roomCode)await dbSet(`rooms/${roomCode}/adminJoin`,adminJoin);
+  if(roomCode) await dbSet(`rooms/${roomCode}/adminJoin`, adminJoin);
   document.getElementById("toggle-bg").style.background=adminJoin?"#4f46e5":"#d1d5db";
   document.getElementById("toggle-knob").style.left=adminJoin?"23px":"3px";
 }
 async function setSize(n){
-  if(roomCode)await dbSet(`rooms/${roomCode}/teamSize`,n);
+  if(roomCode) await dbSet(`rooms/${roomCode}/teamSize`, n);
 }
 
-function buildSzBtns(currentSize){
+function buildSzBtns(){
   const opts=divMode==="count"?[2,3,4,5,6,7,8,10]:[2,3,4,5,6,7,8,10,12,15];
-  const cur=currentSize||parseInt(document.querySelector(".szbtn.on")?.textContent)||5;
+  const cur=parseInt(document.querySelector(".szbtn.on")?.textContent)||5;
   const best=opts.includes(cur)?cur:(opts[3]||5);
   document.getElementById("sz-btns").innerHTML=opts.map(n=>`<button class="szbtn${n===best?" on":""}" onclick="setSize(${n})">${n}</button>`).join("");
-}
-
-function syncAdminUI(room){
-  // DBから設定をJSに同期（リロード対策）
-  const prevDivMode=divMode;
-  gameMode=room.gameMode||"mixed";
-  courtNum=room.courtNum||2;
-  divMode=room.divMode||"count";
-  adminJoin=room.adminJoin!==false;
-
-  document.getElementById("mode-mixed").className="tgl"+(gameMode==="mixed"?" on":"");
-  document.getElementById("mode-sep").className="tgl"+(gameMode==="separate"?" on":"");
-  document.getElementById("court-1").className="tgl"+(courtNum===1?" on":"");
-  document.getElementById("court-2").className="tgl"+(courtNum===2?" on":"");
-  document.getElementById("dc-btn").style.background=divMode==="count"?"#4f46e5":"white";
-  document.getElementById("dc-btn").style.color=divMode==="count"?"white":"#6b7280";
-  document.getElementById("dt-btn").style.background=divMode==="team"?"#4f46e5":"white";
-  document.getElementById("dt-btn").style.color=divMode==="team"?"white":"#6b7280";
-  document.getElementById("sz-label").textContent=divMode==="count"?"1チームの人数":"チーム数";
-  document.getElementById("toggle-bg").style.background=adminJoin?"#4f46e5":"#d1d5db";
-  document.getElementById("toggle-knob").style.left=adminJoin?"23px":"3px";
-  // divModeが変わったときだけサイズボタン再構築
-  if(divMode!==prevDivMode)buildSzBtns(room.teamSize);
-  else document.querySelectorAll(".szbtn").forEach(b=>b.classList.toggle("on",parseInt(b.textContent)===room.teamSize));
 }
 
 function startAdminPoll(){
@@ -445,7 +435,25 @@ function startAdminPoll(){
 }
 
 function renderAdmin(room){
-  syncAdminUI(room);
+  // サーバー上の設定をJSの変数に同期（リロード対策）
+  gameMode = room.gameMode || "mixed";
+  courtNum = room.courtNum || 2;
+  divMode = room.divMode || "count";
+  adminJoin = room.adminJoin !== false; // undefinedの場合はtrue
+
+  // UIの設定パネルを同期
+  document.getElementById("mode-mixed").className="tgl"+(gameMode==="mixed"?" on":"");
+  document.getElementById("mode-sep").className="tgl"+(gameMode==="separate"?" on":"");
+  document.getElementById("court-1").className="tgl"+(courtNum===1?" on":"");
+  document.getElementById("court-2").className="tgl"+(courtNum===2?" on":"");
+  document.getElementById("dc-btn").style.background = divMode==="count"?"#4f46e5":"white";
+  document.getElementById("dc-btn").style.color = divMode==="count"?"white":"#6b7280";
+  document.getElementById("dt-btn").style.background = divMode==="team"?"#4f46e5":"white";
+  document.getElementById("dt-btn").style.color = divMode==="team"?"white":"#6b7280";
+  document.getElementById("sz-label").textContent = divMode==="count"?"1チームの人数":"チーム数";
+  document.querySelectorAll(".szbtn").forEach(b=>b.classList.toggle("on",parseInt(b.textContent)===room.teamSize));
+  document.getElementById("toggle-bg").style.background=adminJoin?"#4f46e5":"#d1d5db";
+  document.getElementById("toggle-knob").style.left=adminJoin?"23px":"3px";
 
   const parts=Object.values(room.participants||{});
   const waiting=parts.filter(p=>p.status==="waiting");
@@ -464,7 +472,7 @@ function renderAdmin(room){
   document.getElementById("a-badge").textContent=room.gameStarted?"🏃 試合中":"⏳ 待機中";
   document.getElementById("a-badge").style.background=room.gameStarted?"#10b981":"#4f46e5";
 
-  // 申請
+  // Requests
   if(waiting.length>0){
     document.getElementById("a-req-sec").style.display="block";
     document.getElementById("a-req-title").textContent=`入室申請 (${waiting.length}件)${room.gameStarted?" — 途中参加":""}`;
@@ -481,12 +489,12 @@ function renderAdmin(room){
     document.getElementById("a-req-sec").style.display="none";
   }
 
-  // プレビュー
+  // 設定パネルを常に表示（非表示ブロックを削除）
   let prev="";
   if(gameMode==="separate"){
     const mT=divMode==="count"?Math.ceil(maleCount/Math.max(room.teamSize,1)):Math.round((room.teamSize||4)*maleCount/Math.max(totalCount,1));
     const fT=divMode==="count"?Math.ceil(femaleCount/Math.max(room.teamSize,1)):Math.max(0,(room.teamSize||4)-mT);
-    prev=`👦男子 ${maleCount}人 → 約${mT}チーム　👧女子 ${femaleCount}人 → 約${fT}チーム`;
+    prev=`👦男子 ${maleCount}人 → 約${mT}チーム 👧女子 ${femaleCount}人 → 約${fT}チーム`;
   } else {
     const sz=room.teamSize||5;
     prev=divMode==="count"
@@ -494,12 +502,21 @@ function renderAdmin(room){
       :`参加 <strong>${totalCount}人</strong> → <strong>${sz}チーム</strong>（各約${Math.floor(totalCount/sz)}〜${Math.ceil(totalCount/sz)}人）`;
   }
   document.getElementById("a-preview").innerHTML=prev;
+  
   const sb=document.getElementById("a-shuffle");
-  sb.disabled=totalCount<2;sb.style.opacity=totalCount<2?"0.4":"1";
-  sb.textContent=room.gameStarted?"🔀 再シャッフル":"🔀 ランダムでチーム分けする";
-  sb.style.background=room.gameStarted?"#8b5cf6":"#4f46e5";
+  sb.disabled=totalCount<2;
+  sb.style.opacity=totalCount<2?"0.4":"1";
+  
+  // ゲーム開始後は、ボタンの色とテキストを変えて再編成できることをアピール
+  if(room.gameStarted) {
+    sb.innerHTML = "🔀 人数やモードを変更して再チーム分け";
+    sb.style.background = "#8b5cf6"; // 紫色にして目立たせる
+  } else {
+    sb.innerHTML = "🔀 ランダムでチーム分けする";
+    sb.style.background = "#4f46e5";
+  }
 
-  // 承認済み
+  // Approved
   document.getElementById("a-approved-title").textContent=`承認済み参加者 (${approved.length}人)`;
   document.getElementById("a-approved-list").innerHTML=approved.length===0?'<div class="empty">まだ参加者がいません</div>':approved.map(p=>{
     const entry=teamEntries.find(([k,t])=>t.members&&Object.values(t.members).some(m=>m.id===p.id));
@@ -515,7 +532,7 @@ function renderAdmin(room){
     </div>`;
   }).join("");
 
-  // チーム結果
+  // Teams
   if(room.gameStarted&&teamKeys.length>0){
     document.getElementById("a-teams-sec").style.display="block";
     document.getElementById("a-teams-list").innerHTML=teamKeys.map(k=>{
@@ -535,19 +552,16 @@ function renderAdmin(room){
     document.getElementById("a-teams-sec").style.display="none";
   }
 
-  // スケジュール
+  // Schedule
   if(room.schedule&&room.gameStarted){
     document.getElementById("a-sched-sec").style.display="block";
-    const isSingle=!room.schedule.court2?.matches?.length;
-    const courts=[
-      {k:"court1",l:isSingle?"コート（ステージ側）":"コート1（ステージ側）",c:"#4338ca"},
-      {k:"court2",l:"コート2（出入り口側）",c:"#0891b2"}
-    ];
+    const isSingleCourt = !room.schedule.court2?.matches?.length;
+    const courts=[{k:"court1",l:isSingleCourt?"コート":"コート1",c:"#4338ca"},{k:"court2",l:"コート2",c:"#0891b2"}];
     document.getElementById("a-sched").innerHTML=courts.map(({k,l,c})=>{
       const court=room.schedule[k];
       if(!court?.matches?.length)return"";
       return `<div style="background:${c};border-radius:1.25rem;padding:1.25rem;margin-bottom:1rem">
-        <div style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
           <span style="background:rgba(255,255,255,.2);color:white;font-size:.8rem;font-weight:800;padding:.3rem .75rem;border-radius:9999px">🏟 ${l}</span>
         </div>
         <div style="color:white">${renderMatches(court.matches)}</div>
@@ -558,9 +572,6 @@ function renderAdmin(room){
   }
 }
 
-// ===================================================
-// シャッフル
-// ===================================================
 async function doShuffle(){
   const room=await dbGet(`rooms/${roomCode}`);
   const base=Object.values(room.participants||{}).filter(p=>p.status==="approved");
@@ -571,39 +582,34 @@ async function doShuffle(){
   let teams={},ti=0;
 
   if(gameMode==="separate"){
-    // 男女をそれぞれシャッフルしてチーム作成
     const males=[...all.filter(p=>p.gender==='male')].sort(()=>Math.random()-.5);
     const females=[...all.filter(p=>p.gender==='female')].sort(()=>Math.random()-.5);
     if(divMode==="count"){
       for(let i=0;i<males.length;i+=sz){const chunk=males.slice(i,i+sz);const mem={};chunk.forEach(m=>mem[m.id]=m);teams[`team${ti}`]={id:`team${ti}`,members:mem,gender:'male'};ti++;}
       for(let i=0;i<females.length;i+=sz){const chunk=females.slice(i,i+sz);const mem={};chunk.forEach(m=>mem[m.id]=m);teams[`team${ti}`]={id:`team${ti}`,members:mem,gender:'female'};ti++;}
     } else {
-      const mT=Math.max(males.length>0?1:0,Math.round(sz*males.length/Math.max(all.length,1)));
+      const mT=Math.max(1,Math.round(sz*males.length/Math.max(all.length,1)));
       const fT=Math.max(females.length>0?1:0,sz-mT);
-      if(mT>0){
-        for(let i=0;i<mT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},gender:'male'};ti++;}
-        males.forEach((m,i)=>{teams[`team${i%mT}`].members[m.id]=m;});
-      }
+      const mShuf=[...males].sort(()=>Math.random()-.5);
+      for(let i=0;i<mT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},gender:'male'};ti++;}
+      mShuf.forEach((m,i)=>{const k=`team${i%mT}`;teams[k].members[m.id]=m;});
       if(fT>0){
-        const fStart=ti;
+        const fStart=ti;const fShuf=[...females].sort(()=>Math.random()-.5);
         for(let i=0;i<fT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},gender:'female'};ti++;}
-        females.forEach((m,i)=>{teams[`team${fStart+i%fT}`].members[m.id]=m;});
+        fShuf.forEach((m,i)=>{const k=`team${fStart+i%fT}`;teams[k].members[m.id]=m;});
       }
     }
   } else {
-    // 混合モード：男女を交互に並べてから均等配分（バランス向上）
+    // 混合モード
     const males=[...all.filter(p=>p.gender==='male')].sort(()=>Math.random()-.5);
     const females=[...all.filter(p=>p.gender==='female')].sort(()=>Math.random()-.5);
-    const interleaved=[];
-    let mi=0,fi=0;
-    while(mi<males.length||fi<females.length){
-      if(mi<males.length)interleaved.push(males[mi++]);
-      if(fi<females.length)interleaved.push(females[fi++]);
-    }
-    const tCount=divMode==="count"?Math.ceil(interleaved.length/sz):sz;
+    const tCount=divMode==="count"?Math.ceil(all.length/sz):sz;
     const actualTC=Math.max(1,tCount);
     for(let i=0;i<actualTC;i++){teams[`team${i}`]={id:`team${i}`,members:{},gender:'mixed'};}
-    interleaved.forEach((m,i)=>{teams[`team${i%actualTC}`].members[m.id]=m;});
+    
+    males.forEach((m,i)=>{teams[`team${i%actualTC}`].members[m.id]=m;});
+    const offset=males.length;
+    females.forEach((m,i)=>{teams[`team${(i+offset)%actualTC}`].members[m.id]=m;});
   }
 
   const schedule=buildCourts(teams);
@@ -612,96 +618,221 @@ async function doShuffle(){
   await dbSet(`rooms/${roomCode}/schedule`,schedule);
 }
 
-// ===================================================
-// コート・スケジュール生成（修正版）
-// ===================================================
 function buildCourts(teams){
-  const keys=Object.keys(teams);
 
-  // 総当たりのマッチリストを生成（審判付き）
-  function makeMatches(teamKeys){
-    if(teamKeys.length<2)return[];
-    // サークル法でラウンドロビン
-    let rot=[...teamKeys];
-    if(rot.length%2!==0)rot.push("BYE");
-    const nRounds=rot.length-1;
-    const half=rot.length/2;
-    const pairs=[];
-    for(let r=0;r<nRounds;r++){
-      for(let i=0;i<half;i++){
-        const t1=rot[i],t2=rot[rot.length-1-i];
-        if(t1!=="BYE"&&t2!=="BYE")pairs.push([t1,t2]);
+  const keys = Object.keys(teams);
+
+  // =========================
+  // ラウンドロビン生成
+  // =========================
+
+  function createRoundRobin(teamKeys){
+
+    if(teamKeys.length <= 1){
+      return [];
+    }
+
+    let rotation = [...teamKeys];
+
+    const isOdd = rotation.length % 2 === 1;
+
+    if(isOdd){
+      rotation.push("BYE");
+    }
+
+    const rounds = rotation.length - 1;
+    const half = rotation.length / 2;
+
+    const result = [];
+
+    for(let round = 0; round < rounds; round++){
+
+      let matches = [];
+
+      for(let i = 0; i < half; i++){
+
+        const t1 = rotation[i];
+        const t2 = rotation[rotation.length - 1 - i];
+
+        if(t1 === "BYE" || t2 === "BYE"){
+          continue;
+        }
+
+        matches.push({
+          t1,
+          t2,
+          round: round + 1
+        });
       }
-      const fixed=rot[0];const rest=rot.slice(1);
-      rest.unshift(rest.pop());rot=[fixed,...rest];
+
+      result.push({
+        matches,
+        round: round + 1
+      });
+
+      const fixed = rotation[0];
+      const rest = rotation.slice(1);
+
+      rest.unshift(rest.pop());
+
+      rotation = [fixed, ...rest];
     }
-    // 審判を均等に割り振り
-    const rc={};teamKeys.forEach(k=>rc[k]=0);
-    return pairs.map((pair,i)=>{
-      const [t1,t2]=pair;
-      const avail=teamKeys.filter(k=>k!==t1&&k!==t2).sort((a,b)=>rc[a]-rc[b]||Math.random()-.5);
-      const ref=avail[0]||null;
-      if(ref)rc[ref]++;
-      return{t1,t2,ref,num:i+1,displayNum:`${i+1}`};
+
+    return result;
+  }
+
+  // =========================
+  // 男女別対応（修正版）
+  // =========================
+
+  let allSlots = [];
+
+  if(gameMode === "separate"){
+
+    const maleKeys = keys.filter(
+      k => teams[k].gender === "male"
+    );
+
+    const femaleKeys = keys.filter(
+      k => teams[k].gender === "female"
+    );
+
+    const maleSlots = createRoundRobin(maleKeys);
+    const femaleSlots = createRoundRobin(femaleKeys);
+
+    const maxRounds = Math.max(
+      maleSlots.length,
+      femaleSlots.length
+    );
+
+    // 同じラウンドの男女試合を同時開催にする
+    for(let i = 0; i < maxRounds; i++){
+
+      const mergedMatches = [];
+
+      if(maleSlots[i]){
+        mergedMatches.push(...maleSlots[i].matches);
+      }
+
+      if(femaleSlots[i]){
+        mergedMatches.push(...femaleSlots[i].matches);
+      }
+
+      if(mergedMatches.length > 0){
+
+        allSlots.push({
+          matches: mergedMatches,
+          round: i + 1,
+          gender: "mixed"
+        });
+      }
+    }
+
+  }else{
+
+    allSlots = createRoundRobin(keys);
+  }
+
+  // =========================
+  // 審判回数均等化
+  // =========================
+
+  const refCount = {};
+
+  keys.forEach(k=>{
+    refCount[k] = 0;
+  });
+
+  allSlots.forEach(slot=>{
+
+    const playingTeams = new Set();
+
+    slot.matches.forEach(m=>{
+      playingTeams.add(m.t1);
+      playingTeams.add(m.t2);
     });
-  }
 
-  // ===== 男女別モード =====
-  if(gameMode==="separate"){
-    const maleKeys=keys.filter(k=>teams[k].gender==='male');
-    const femaleKeys=keys.filter(k=>teams[k].gender==='female');
+    let candidates = keys.filter(
+      k => !playingTeams.has(k)
+    );
 
-    if(courtNum===2&&maleKeys.length>=2&&femaleKeys.length>=2){
-      // 男子コート1、女子コート2で独立した総当たり
-      return{
-        court1:{teamKeys:maleKeys,matches:makeMatches(maleKeys)},
-        court2:{teamKeys:femaleKeys,matches:makeMatches(femaleKeys)}
+    // 男女別時は同性優先
+    if(gameMode === "separate"){
+
+      const matchGender = teams[slot.matches[0]?.t1]?.gender;
+
+      const genderCandidates = candidates.filter(
+        k => teams[k].gender === matchGender
+      );
+
+      if(genderCandidates.length > 0){
+        candidates = genderCandidates;
+      }
+    }
+
+    candidates.sort((a,b)=>{
+
+      if(refCount[a] !== refCount[b]){
+        return refCount[a] - refCount[b];
+      }
+
+      return Math.random() - 0.5;
+    });
+
+    slot.ref = candidates[0] || null;
+
+    if(slot.ref){
+      refCount[slot.ref]++;
+    }
+  });
+
+  // =========================
+  // コート割り当て
+  // =========================
+
+  let court1 = [];
+  let court2 = [];
+
+  let matchNum = 1;
+
+  allSlots.forEach(slot => {
+
+    slot.matches.forEach((match,index) => {
+
+      const obj = {
+        ...match,
+        ref: slot.ref || null,
+        num: matchNum++,
+        round: slot.round
       };
-    }
 
-    // 片方しかいない場合、またはどちらかが2チーム未満の場合
-    const validMale=maleKeys.length>=2?maleKeys:[];
-    const validFemale=femaleKeys.length>=2?femaleKeys:[];
-    const dominant=validMale.length>=validFemale.length?validMale:validFemale;
+      if(courtNum === 1){
 
-    if(courtNum===2&&dominant.length>=4){
-      // 1種類の性別だけで2コートに分ける
-      const mid=Math.ceil(dominant.length/2);
-      return{
-        court1:{teamKeys:dominant.slice(0,mid),matches:makeMatches(dominant.slice(0,mid))},
-        court2:{teamKeys:dominant.slice(mid),matches:makeMatches(dominant.slice(mid))}
-      };
-    }
+        court1.push(obj);
 
-    // 1コート：男女試合を交互に並べる
-    const mM=makeMatches(maleKeys);
-    const fM=makeMatches(femaleKeys);
-    const merged=[];let mi=0,fi=0;
-    while(mi<mM.length||fi<fM.length){
-      if(mi<mM.length)merged.push(mM[mi++]);
-      if(fi<fM.length)merged.push(fM[fi++]);
-    }
-    const numbered=merged.map((m,i)=>({...m,num:i+1,displayNum:`${i+1}`}));
-    return{court1:{teamKeys:keys,matches:numbered},court2:null};
-  }
+      }else{
 
-  // ===== 混合モード =====
-  if(courtNum===1||keys.length<4){
-    return{court1:{teamKeys:keys,matches:makeMatches(keys)},court2:null};
-  }
-  // 2コート：チームを半分ずつ
-  const mid=Math.ceil(keys.length/2);
-  const c1Keys=keys.slice(0,mid);
-  const c2Keys=keys.slice(mid);
-  return{
-    court1:{teamKeys:c1Keys,matches:makeMatches(c1Keys)},
-    court2:{teamKeys:c2Keys,matches:makeMatches(c2Keys)}
+        if(index % 2 === 0){
+          court1.push(obj);
+        }else{
+          court2.push(obj);
+        }
+      }
+    });
+  });
+
+  return {
+    court1:{
+      teamKeys: keys,
+      matches: court1
+    },
+    court2: courtNum === 2 ? {
+      teamKeys: keys,
+      matches: court2
+    } : null
   };
 }
 
-// ===================================================
-// ユーティリティ
-// ===================================================
 function copyCode(){
   navigator.clipboard?.writeText(roomCode).catch(()=>{});
   document.getElementById("copy-btn").textContent="✓";
@@ -733,23 +864,64 @@ async function approveAll(){
 }
 async function approveUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");}
 async function kickUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"kicked");}
-
 async function addLate(id){
-  const room=await dbGet(`rooms/${roomCode}`);
-  const participant=room.participants[id];
-  if(!participant)return;
-  const entries=Object.entries(room.teams||{});
-  if(!entries.length)return;
-  // 男女別なら同性のチームに追加
-  let candidates=entries;
-  if(gameMode==="separate"){
-    const same=entries.filter(([k,t])=>t.gender===participant.gender);
-    if(same.length)candidates=same;
+
+  const room = await dbGet(`rooms/${roomCode}`);
+
+  const participant = room.participants[id];
+
+  if(!participant) return;
+
+  const teams = room.teams || {};
+
+  const entries = Object.entries(teams);
+
+  if(entries.length === 0) return;
+
+  let candidates = entries;
+
+  if(room.gameMode === "separate"){
+
+    candidates = entries.filter(([k,t])=>{
+      return t.gender === participant.gender;
+    });
   }
-  candidates.sort((a,b)=>Object.keys(a[1].members||{}).length-Object.keys(b[1].members||{}).length);
-  const[targetKey,targetTeam]=candidates[0];
-  await dbSet(`rooms/${roomCode}/teams/${targetKey}/members/${id}`,{...participant,lateJoin:true});
-  await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");
+
+  if(candidates.length === 0){
+
+    alert("追加できるチームがありません");
+
+    return;
+  }
+
+  candidates.sort((a,b)=>{
+
+    const aCount = Object.keys(a[1].members || {}).length;
+    const bCount = Object.keys(b[1].members || {}).length;
+
+    return aCount - bCount;
+  });
+
+  const [targetKey,targetTeam] = candidates[0];
+
+  const updatedMembers = {
+    ...(targetTeam.members || {}),
+    [participant.id]: {
+      ...participant,
+      lateJoin: true
+    }
+  };
+
+  await dbSet(
+    `rooms/${roomCode}/teams/${targetKey}/members`,
+    updatedMembers
+  );
+
+  await dbSet(
+    `rooms/${roomCode}/participants/${id}/status`,
+    "approved"
+  );
+
   alert(`チーム ${tNum(targetKey)} に追加しました`);
 }
 
@@ -766,7 +938,7 @@ async function init(){
       document.getElementById("w-code").textContent=roomCode;
       document.getElementById("w-name").textContent=myName;
       show("s-waiting");startWaitingPoll();
-    } else{clearLocal();show("s-home");}
+    } else {clearLocal();show("s-home");}
   }
 }
 init();
