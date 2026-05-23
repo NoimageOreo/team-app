@@ -160,6 +160,49 @@ input:focus{border-color:#4f46e5}
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;background:#f8faff;border-radius:.75rem;padding:.75rem 1rem">
         <span style="font-size:.85rem;color:#374151;font-weight:600;flex:1">管理者もチームに参加する</span>
         <div onclick="toggleAdminJoin()" id="toggle-bg" style="position:relative;width:44px;height:24px;background:#4f46e5;border-radius:24px;cursor:pointer;transition:.3s">
+          let manualGender = "male";
+
+function setManualGender(g){
+
+  manualGender = g;
+
+  document.getElementById("manual-male").className =
+    "tgl" + (g === "male" ? " on-blue on" : "");
+
+  document.getElementById("manual-female").className =
+    "tgl" + (g === "female" ? " on-pink on" : "");
+}
+
+async function addManualPlayer(){
+
+  const name = document
+    .getElementById("manual-name")
+    .value
+    .trim();
+
+  if(!name){
+
+    alert("名前を入力してください");
+
+    return;
+  }
+
+  const id = "manual_" + genId();
+
+  await dbSet(
+    `rooms/${roomCode}/participants/${id}`,
+    {
+      id,
+      name,
+      gender: manualGender,
+      status: "approved",
+      manual: true,
+      joinedAt: Date.now()
+    }
+  );
+
+  document.getElementById("manual-name").value = "";
+}
           <div id="toggle-knob" style="position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:23px;transition:.3s"></div>
         </div>
       </div>
@@ -172,6 +215,42 @@ input:focus{border-color:#4f46e5}
         <div style="width:8px;height:8px;border-radius:50%;background:#10b981"></div>
         <span id="a-approved-title">承認済み参加者</span>
       </div>
+      <div class="card">
+  <div style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:1rem">
+    ➕ スマホなし参加者を追加
+  </div>
+
+  <input
+    id="manual-name"
+    type="text"
+    placeholder="名前"
+  />
+
+  <div class="tgl-grp">
+    <button
+      class="tgl on-blue"
+      id="manual-male"
+      onclick="setManualGender('male')"
+    >
+      👦 男子
+    </button>
+
+    <button
+      class="tgl"
+      id="manual-female"
+      onclick="setManualGender('female')"
+    >
+      👧 女子
+    </button>
+  </div>
+
+  <button
+    class="btn btn-green"
+    onclick="addManualPlayer()"
+  >
+    参加者を追加
+  </button>
+</div>
       <div id="a-approved-list"><div class="empty">まだ参加者がいません</div></div>
     </div>
 
@@ -368,7 +447,22 @@ function renderMatches(matches,highlightKey=null){
     const courtCol = m.courtName === 'コート1' || m.courtName === 'コート' ? '#4f46e5' : '#0891b2';
     
     return `<div class="match-row" style="${isPlay?'background:#fffbeb;border-radius:.5rem;padding:.3rem .5rem;':isRef?'background:#f0fdf4;border-radius:.5rem;padding:.3rem .5rem;':''}">
-      <div style="width:22px;height:22px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#374151;flex-shrink:0">${m.num}</div>
+      <div style="width:22px;height:22px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#374151;flex-shrink:0"><div style="
+  min-width:58px;
+  height:22px;
+  border-radius:999px;
+  background:#e5e7eb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.65rem;
+  font-weight:800;
+  color:#374151;
+  flex-shrink:0;
+  padding:0 .45rem;
+">
+  第${m.displayNum || m.num}試合
+</div>
       ${m.courtName ? `<div style="font-size:.65rem;font-weight:800;color:white;background:${courtCol};padding:.15rem .4rem;border-radius:.25rem;margin-right:.25rem;flex-shrink:0">${m.courtName}</div>` : ''}
       <div style="flex:1">
         <span style="font-weight:700;color:${c1.bg}">チーム${tNum(m.t1)}</span>
@@ -377,7 +471,14 @@ function renderMatches(matches,highlightKey=null){
         ${isPlay?'<span class="badge" style="background:#fef9c3;color:#854d0e;margin-left:.3rem">試合</span>':''}
         ${isRef?'<span class="badge" style="background:#d1fae5;color:#065f46;margin-left:.3rem">審判</span>':''}
       </div>
-      ${m.ref?`<span style="font-size:.72rem;color:#6b7280;flex-shrink:0">審判:チーム${tNum(m.ref)}</span>`:''}
+      ${m.ref
+  ? `<span style="font-size:.72rem;color:#6b7280;flex-shrink:0">
+      審判:チーム${tNum(m.ref)}
+     </span>`
+  : `<span style="font-size:.72rem;color:#9ca3af;flex-shrink:0">
+      審判なし
+     </span>`
+    }
     </div>`;
   }).join("");
 }
@@ -682,7 +783,7 @@ function buildCourts(teams){
   }
 
   // =========================
-  // 男女別対応（修正版）
+  // 男女別対応
   // =========================
 
   let allSlots = [];
@@ -705,7 +806,6 @@ function buildCourts(teams){
       femaleSlots.length
     );
 
-    // 同じラウンドの男女試合を同時開催にする
     for(let i = 0; i < maxRounds; i++){
 
       const mergedMatches = [];
@@ -734,8 +834,82 @@ function buildCourts(teams){
   }
 
   // =========================
-  // 審判回数均等化
+  // コート振り分け
   // =========================
+
+  let court1 = [];
+  let court2 = [];
+
+  let globalIndex = 0;
+  let displayNum = 1;
+
+  allSlots.forEach(slot => {
+
+    slot.matches.forEach(match => {
+
+      const obj = {
+        ...match,
+        round: slot.round,
+        displayNum
+      };
+
+      if(courtNum === 1){
+
+        obj.courtMatchNum = displayNum;
+
+        court1.push(obj);
+
+        displayNum++;
+
+      }else{
+
+        if(globalIndex % 2 === 0){
+
+          obj.courtMatchNum = court1.length + 1;
+
+          court1.push(obj);
+
+        }else{
+
+          obj.courtMatchNum = court2.length + 1;
+
+          court2.push(obj);
+        }
+
+        globalIndex++;
+
+        // 同時試合番号
+        if(globalIndex % 2 === 0){
+          displayNum++;
+        }
+      }
+    });
+  });
+
+  // 奇数試合で終わった場合
+  if(courtNum === 2 && globalIndex % 2 === 1){
+    displayNum++;
+  }
+
+  // =========================
+  // 同時試合ごとに審判決定
+  // =========================
+
+  const allMatches = [
+    ...court1,
+    ...court2
+  ];
+
+  const displayGroups = {};
+
+  allMatches.forEach(m => {
+
+    if(!displayGroups[m.displayNum]){
+      displayGroups[m.displayNum] = [];
+    }
+
+    displayGroups[m.displayNum].push(m);
+  });
 
   const refCount = {};
 
@@ -743,30 +917,32 @@ function buildCourts(teams){
     refCount[k] = 0;
   });
 
-  allSlots.forEach(slot=>{
+  Object.values(displayGroups).forEach(group => {
 
-    const playingTeams = new Set();
+    const busyTeams = new Set();
 
-    slot.matches.forEach(m=>{
-      playingTeams.add(m.t1);
-      playingTeams.add(m.t2);
+    group.forEach(m => {
+
+      busyTeams.add(m.t1);
+      busyTeams.add(m.t2);
     });
 
     let candidates = keys.filter(
-      k => !playingTeams.has(k)
+      k => !busyTeams.has(k)
     );
 
     // 男女別時は同性優先
     if(gameMode === "separate"){
 
-      const matchGender = teams[slot.matches[0]?.t1]?.gender;
+      const matchGender =
+        teams[group[0].t1]?.gender;
 
-      const genderCandidates = candidates.filter(
+      const sameGender = candidates.filter(
         k => teams[k].gender === matchGender
       );
 
-      if(genderCandidates.length > 0){
-        candidates = genderCandidates;
+      if(sameGender.length){
+        candidates = sameGender;
       }
     }
 
@@ -779,45 +955,14 @@ function buildCourts(teams){
       return Math.random() - 0.5;
     });
 
-    slot.ref = candidates[0] || null;
+    const ref = candidates[0] || null;
 
-    if(slot.ref){
-      refCount[slot.ref]++;
+    if(ref){
+      refCount[ref]++;
     }
-  });
 
-  // =========================
-  // コート割り当て
-  // =========================
-
-  let court1 = [];
-  let court2 = [];
-
-  let matchNum = 1;
-
-  allSlots.forEach(slot => {
-
-    slot.matches.forEach((match,index) => {
-
-      const obj = {
-        ...match,
-        ref: slot.ref || null,
-        num: matchNum++,
-        round: slot.round
-      };
-
-      if(courtNum === 1){
-
-        court1.push(obj);
-
-      }else{
-
-        if(index % 2 === 0){
-          court1.push(obj);
-        }else{
-          court2.push(obj);
-        }
-      }
+    group.forEach(m=>{
+      m.ref = ref;
     });
   });
 
