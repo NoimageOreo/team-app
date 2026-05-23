@@ -760,17 +760,22 @@ function buildCourts(teams){
 
   allSlots.forEach(slot=>{
 
+    // このラウンドで試合してるチーム
     const playingTeams = new Set();
 
     slot.matches.forEach(m=>{
+
       playingTeams.add(m.t1);
       playingTeams.add(m.t2);
+
     });
 
+    // 試合してないチームのみ審判候補
     let candidates = keys.filter(
       k => !playingTeams.has(k)
     );
 
+    // 男女別なら同性別優先
     if(gameMode === "separate" && slot.gender){
 
       const genderCandidates = candidates.filter(
@@ -782,6 +787,14 @@ function buildCourts(teams){
       }
     }
 
+    // 候補ゼロなら審判なし
+    if(candidates.length === 0){
+
+      slot.ref = null;
+      return;
+    }
+
+    // 審判回数少ない順
     candidates.sort((a,b)=>{
 
       if(refCount[a] !== refCount[b]){
@@ -791,11 +804,10 @@ function buildCourts(teams){
       return Math.random() - 0.5;
     });
 
-    slot.ref = candidates[0] || null;
+    // 同ラウンド両コート同じ審判
+    slot.ref = candidates[0];
 
-    if(slot.ref){
-      refCount[slot.ref]++;
-    }
+    refCount[slot.ref]++;
   });
 
   // =========================
@@ -828,7 +840,7 @@ function buildCourts(teams){
 
       }else{
 
-        // 全体で交互に振り分け
+        // 全体で交互振り分け
         if((court1.length + court2.length) % 2 === 0){
 
           obj.displayNum = `${court1Num}`;
