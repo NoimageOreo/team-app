@@ -869,49 +869,41 @@ function buildCourts(teams){
   let court1 = [];
   let court2 = [];
 
-  let displayNum = 1;
+let displayNum = 0;
 
-  allSlots.forEach(slot => {
+allSlots.forEach(slot => {
 
-    const busyTeams = new Set();
+  const currentDisplayNum = ++displayNum;
 
-    slot.matches.forEach(match => {
+  slot.matches.forEach(match => {
 
-      // 同じチームが同時試合になるなら次試合へ
-      busyTeams.clear();
+    const obj = {
+      ...match,
+      round: slot.round,
+      displayNum: currentDisplayNum
+    };
 
-      const obj = {
-        ...match,
-        round: slot.round,
-        displayNum
-      };
+    if(courtNum === 1){
 
-      if(courtNum === 1){
+      obj.courtMatchNum = court1.length + 1;
+      court1.push(obj);
+
+    }else{
+
+      if(court1.length <= court2.length){
 
         obj.courtMatchNum = court1.length + 1;
-
         court1.push(obj);
 
       }else{
 
-        if(court1.length <= court2.length){
-
-          obj.courtMatchNum = court1.length + 1;
-
-          court1.push(obj);
-
-        }else{
-
-          obj.courtMatchNum = court2.length + 1;
-
-          court2.push(obj);
-        }
+        obj.courtMatchNum = court2.length + 1;
+        court2.push(obj);
       }
-    });
-
-    displayNum++;
+    }
   });
 
+});
   // =========================
   // 同時試合ごとに審判決定
   // =========================
