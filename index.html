@@ -39,7 +39,15 @@ input:focus{border-color:#4f46e5}
 .btn-add{background:#3b82f6;color:white}
 .btn-kick{background:#fee2e2;color:#dc2626}
 .empty{text-align:center;color:#9ca3af;font-size:.85rem;padding:1.5rem 0}
-.match-row{display:flex;align-items:center;gap:.5rem;padding:.55rem 0;border-bottom:1px solid rgba(255,255,255,.15);font-size:.82rem}
+.match-row{
+  display:flex;
+  align-items:flex-start;
+  gap:.45rem;
+  padding:.55rem 0;
+  border-bottom:1px solid rgba(255,255,255,.15);
+  font-size:.82rem;
+  flex-wrap:wrap;
+}
 .match-row:last-child{border-bottom:none}
 .badge{font-size:.68rem;padding:.15rem .45rem;border-radius:9999px;font-weight:700;flex-shrink:0}
 </style>
@@ -481,7 +489,11 @@ function renderMatches(matches,highlightKey=null){
     ${m.courtName}
   </div>
 ` : ''}
-      <div style="flex:1">
+      <div style="
+  flex:1;
+  min-width:120px;
+  word-break:keep-all;
+">
         <span style="font-weight:700;color:${c1.bg}">チーム${tNum(m.t1)}</span>
         <span style="color:#9ca3af;margin:0 .25rem">vs</span>
         <span style="font-weight:700;color:${c2.bg}">チーム${tNum(m.t2)}</span>
