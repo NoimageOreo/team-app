@@ -164,7 +164,6 @@ input:focus{border-color:#4f46e5}
         </div>
       </div>
       <div id="a-preview" style="background:#eef2ff;border-radius:.75rem;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#4338ca;font-weight:600"></div>
-      
       <button id="a-shuffle" onclick="doShuffle()" disabled style="width:100%;background:#4f46e5;color:white;border:none;padding:.9rem;border-radius:.75rem;font-size:.9rem;font-weight:700;cursor:pointer;opacity:.4">🔀 ランダムでチーム分けする</button>
     </div>
 
@@ -308,19 +307,22 @@ function renderParticipant(room){
     document.getElementById("p-label").textContent=`チーム ${tNum(myKey)}`;
     document.getElementById("p-wait").style.display="none";
 
-    // 複数コートをまたいで試合があるか判定
-    let myCourtName="", myCourtKeys=[];
+    // 自分の試合をすべて抽出して時系列に並べる
+    let myMatches = [];
+    const currentCourtNum = room.courtNum || 2;
     if(room.schedule){
-      const inC1 = room.schedule.court1?.matches?.some(m => m.t1 === myKey || m.t2 === myKey || m.ref === myKey);
-      const inC2 = room.schedule.court2?.matches?.some(m => m.t1 === myKey || m.t2 === myKey || m.ref === myKey);
-      if(inC1) myCourtKeys.push("court1");
-      if(inC2) myCourtKeys.push("court2");
-      
-      if(inC1 && inC2) myCourtName = "複数コート移動";
-      else if(inC1) myCourtName = (room.schedule.court2?.matches?.length ? "コート1" : "コート");
-      else if(inC2) myCourtName = "コート2";
+      if(room.schedule.court1?.matches){
+        room.schedule.court1.matches.forEach(m => myMatches.push({...m, courtName: currentCourtNum===1?'コート':'コート1'}));
+      }
+      if(room.schedule.court2?.matches){
+        room.schedule.court2.matches.forEach(m => myMatches.push({...m, courtName: 'コート2'}));
+      }
     }
-    document.getElementById("p-court").textContent=myCourtName?`📍 ${myCourtName}`:"";
+    // 自分が出場、または審判をする試合だけに絞り込む
+    myMatches = myMatches.filter(m => m.t1 === myKey || m.t2 === myKey || m.ref === myKey);
+    myMatches.sort((a,b) => a.num - b.num);
+
+    document.getElementById("p-court").textContent = myMatches.length > 0 ? `📍 全 ${myMatches.length} 試合（スケジュールを確認）` : "";
     
     const mems=Object.values(myTeam.members||{});
     document.getElementById("p-member-title").textContent=`あなたのチームメンバー（${mems.length}人）`;
@@ -333,21 +335,12 @@ function renderParticipant(room){
       </div>`).join("");
     document.getElementById("p-members-card").style.display="block";
 
-    // スケジュール表示部分
-    if(myCourtKeys.length > 0){
-      let html = "";
-      myCourtKeys.forEach(ck => {
-        const ms = room.schedule[ck].matches || [];
-        if(myCourtKeys.length > 1) {
-          const cName = ck==="court1" ? "コート1" : "コート2";
-          const cCol = ck==="court1" ? "#4338ca" : "#0891b2";
-          // 性別ラベルは廃止し、シンプルにコート名だけ表示
-          html += `<div style="font-size:.75rem;font-weight:800;color:${cCol};margin-bottom:.4rem;margin-top:${html?'.75rem':'0'}">🏟 ${cName}</div>`;
-        }
-        html += renderMatches(ms, myKey);
-      });
-      document.getElementById("p-schedule").innerHTML = html;
+    // スケジュール表示（コート名バッジ付き）
+    if(myMatches.length > 0){
+      document.getElementById("p-schedule").innerHTML = renderMatches(myMatches, myKey);
       document.getElementById("p-schedule-card").style.display="block";
+    } else {
+      document.getElementById("p-schedule-card").style.display="none";
     }
 
     document.getElementById("p-all").innerHTML=teamKeys.map(k=>{
@@ -372,8 +365,11 @@ function renderMatches(matches,highlightKey=null){
     const c1=tCol(m.t1),c2=tCol(m.t2);
     const isPlay=highlightKey&&(m.t1===highlightKey||m.t2===highlightKey);
     const isRef=highlightKey&&m.ref===highlightKey;
+    const courtCol = m.courtName === 'コート1' || m.courtName === 'コート' ? '#4f46e5' : '#0891b2';
+    
     return `<div class="match-row" style="${isPlay?'background:#fffbeb;border-radius:.5rem;padding:.3rem .5rem;':isRef?'background:#f0fdf4;border-radius:.5rem;padding:.3rem .5rem;':''}">
       <div style="width:22px;height:22px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#374151;flex-shrink:0">${m.num}</div>
+      ${m.courtName ? `<div style="font-size:.65rem;font-weight:800;color:white;background:${courtCol};padding:.15rem .4rem;border-radius:.25rem;margin-right:.25rem;flex-shrink:0">${m.courtName}</div>` : ''}
       <div style="flex:1">
         <span style="font-weight:700;color:${c1.bg}">チーム${tNum(m.t1)}</span>
         <span style="color:#9ca3af;margin:0 .25rem">vs</span>
@@ -493,7 +489,7 @@ function renderAdmin(room){
     document.getElementById("a-req-sec").style.display="none";
   }
 
-  // Preview Settings (Always displayed now)
+  // 設定パネルを常に表示（非表示ブロックを削除）
   let prev="";
   if(gameMode==="separate"){
     const mT=divMode==="count"?Math.ceil(maleCount/Math.max(room.teamSize,1)):Math.round((room.teamSize||4)*maleCount/Math.max(totalCount,1));
@@ -511,10 +507,10 @@ function renderAdmin(room){
   sb.disabled=totalCount<2;
   sb.style.opacity=totalCount<2?"0.4":"1";
   
-  // ゲーム開始後は、ボタンの色とテキストを変えて注意喚起
+  // ゲーム開始後は、ボタンの色とテキストを変えて再編成できることをアピール
   if(room.gameStarted) {
-    sb.innerHTML = "🔀 現在の設定でチームを組み直す";
-    sb.style.background = "#4f46e5";
+    sb.innerHTML = "🔀 人数やモードを変更して再チーム分け";
+    sb.style.background = "#8b5cf6"; // 紫色にして目立たせる
   } else {
     sb.innerHTML = "🔀 ランダムでチーム分けする";
     sb.style.background = "#4f46e5";
@@ -624,66 +620,117 @@ async function doShuffle(){
 
 function buildCourts(teams){
   const keys=Object.keys(teams);
-  let combined = [];
-  
+  let allPairs = [];
+
+  function generatePairs(teamKeys) {
+    const pairs = [];
+    for(let i=0; i<teamKeys.length; i++){
+      for(let j=i+1; j<teamKeys.length; j++){
+        pairs.push({t1: teamKeys[i], t2: teamKeys[j]});
+      }
+    }
+    return pairs;
+  }
+
   if(gameMode==="separate"){
     const mK=keys.filter(k=>teams[k].gender==='male');
     const fK=keys.filter(k=>teams[k].gender==='female');
-    const mMatches=roundRobin(mK);
-    const fMatches=roundRobin(fK);
+    const mPairs=generatePairs(mK);
+    const fPairs=generatePairs(fK);
 
-    // 男子の試合と女子の試合を均等に混ぜ合わせる（男女でコートを縛らない）
     let m=0, f=0;
-    while(m < mMatches.length || f < fMatches.length){
-      if(m < mMatches.length && (f === fMatches.length || (m * fMatches.length <= f * mMatches.length))){
-        combined.push(mMatches[m++]);
+    while(m < mPairs.length || f < fPairs.length){
+      if(m < mPairs.length && (f === fPairs.length || (m * fPairs.length <= f * mPairs.length))){
+        allPairs.push(mPairs[m++]);
       } else {
-        combined.push(fMatches[f++]);
+        allPairs.push(fPairs[f++]);
       }
     }
   } else {
-    combined = roundRobin(keys);
+    allPairs = generatePairs(keys);
   }
 
-  // 出来上がったタイムラインの試合番号を振り直す
-  combined.forEach((match, i) => match.num = i + 1);
+  // スロット（時間枠）ごとに被りのない試合を割り当てるパズルアルゴリズム
+  const slots = [];
+  const remainingPairs = [...allPairs];
 
-  if(courtNum===1){
-    return { court1: { teamKeys: keys, matches: combined } };
-  } else {
-    // 2コートの場合は、タイムラインを順番にコート1と2へ振り分ける
-    let c1Matches=[], c2Matches=[];
-    combined.forEach((match, i) => {
-      if(i % 2 === 0) c1Matches.push(match);
-      else c2Matches.push(match);
+  while (remainingPairs.length > 0) {
+    const currentSlot = [];
+    const involvedTeams = new Set();
+
+    for (let i = 0; i < remainingPairs.length; i++) {
+      if (currentSlot.length >= courtNum) break; // コート数分埋まったら次のスロットへ
+      const pair = remainingPairs[i];
+      // そのスロットでまだ試合に入っていないチームなら採用
+      if (!involvedTeams.has(pair.t1) && !involvedTeams.has(pair.t2)) {
+        currentSlot.push(pair);
+        involvedTeams.add(pair.t1);
+        involvedTeams.add(pair.t2);
+        remainingPairs.splice(i, 1);
+        i--;
+      }
+    }
+
+    if (currentSlot.length === 0 && remainingPairs.length > 0) {
+      currentSlot.push(remainingPairs.shift());
+    }
+
+    slots.push(currentSlot);
+  }
+
+  // 審判の割り当て（そのスロットで試合がないチームから選出）
+  const refCounts = {};
+  keys.forEach(k => refCounts[k] = 0);
+
+  slots.forEach(slot => {
+    const involvedTeams = new Set();
+    slot.forEach(match => {
+      involvedTeams.add(match.t1);
+      involvedTeams.add(match.t2);
     });
-    return {
-      court1: { teamKeys: keys, matches: c1Matches },
-      court2: { teamKeys: keys, matches: c2Matches }
-    };
-  }
-}
 
-function roundRobin(keys){
-  if(keys.length<2)return[];
-  const pairs=[];
-  for(let i=0;i<keys.length;i++)for(let j=i+1;j<keys.length;j++)pairs.push([keys[i],keys[j]]);
-  const ordered=[pairs.splice(0,1)[0]];
-  while(pairs.length>0){
-    const last=ordered[ordered.length-1];
-    let idx=pairs.findIndex(p=>p[0]!==last[0]&&p[0]!==last[1]&&p[1]!==last[0]&&p[1]!==last[1]);
-    if(idx===-1)idx=0;
-    ordered.push(pairs.splice(idx,1)[0]);
-  }
-  const rc={};keys.forEach(k=>rc[k]=0);
-  return ordered.map((pair,i)=>{
-    const [k1,k2]=pair;
-    const av=keys.filter(k=>k!==k1&&k!==k2);
-    if(!av.length)return{num:i+1,t1:k1,t2:k2,ref:null};
-    av.sort((a,b)=>rc[a]-rc[b]);
-    rc[av[0]]++;
-    return{num:i+1,t1:k1,t2:k2,ref:av[0]};
+    slot.forEach(match => {
+      const gender = teams[match.t1].gender;
+      let candidates = keys.filter(k => !involvedTeams.has(k) && teams[k].gender === gender);
+      if (candidates.length === 0) {
+        candidates = keys.filter(k => !involvedTeams.has(k));
+      }
+
+      if (candidates.length > 0) {
+        candidates.sort((a, b) => refCounts[a] - refCounts[b]);
+        const ref = candidates[0];
+        match.ref = ref;
+        involvedTeams.add(ref);
+        refCounts[ref]++;
+      } else {
+        match.ref = null;
+      }
+    });
   });
+
+  // スロットを順番にコートに割り当てる
+  let c1Matches = [], c2Matches = [];
+  let globalMatchNum = 1;
+
+  slots.forEach(slot => {
+    if (slot[0]) {
+      slot[0].num = globalMatchNum++;
+      c1Matches.push(slot[0]);
+    }
+    if (slot[1] && courtNum > 1) {
+      slot[1].num = globalMatchNum++;
+      c2Matches.push(slot[1]);
+    }
+  });
+
+  if (courtNum === 1) {
+     return { court1: { teamKeys: keys, matches: c1Matches } };
+  } else {
+     return {
+       court1: { teamKeys: keys, matches: c1Matches },
+       court2: { teamKeys: keys, matches: c2Matches }
+     };
+  }
 }
 
 function copyCode(){
