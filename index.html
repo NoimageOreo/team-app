@@ -859,13 +859,17 @@ function buildCourts(teams){
   let court1 = [];
   let court2 = [];
 
-  let globalIndex = 0;
   let displayNum = 1;
 
   allSlots.forEach(slot => {
 
+    const busyTeams = new Set();
+
     slot.matches.forEach(match => {
 
+      // 同じチームが同時試合になるなら次試合へ
+      busyTeams.clear();
+      
       const obj = {
         ...match,
         round: slot.round,
@@ -874,15 +878,13 @@ function buildCourts(teams){
 
       if(courtNum === 1){
 
-        obj.courtMatchNum = displayNum;
+        obj.courtMatchNum = court1.length + 1;
 
         court1.push(obj);
 
-        displayNum++;
-
       }else{
 
-        if(globalIndex % 2 === 0){
+        if(court1.length <= court2.length){
 
           obj.courtMatchNum = court1.length + 1;
 
@@ -894,21 +896,11 @@ function buildCourts(teams){
 
           court2.push(obj);
         }
-
-        globalIndex++;
-
-        // 同時試合番号
-        if(globalIndex % 2 === 0){
-          displayNum++;
-        }
       }
     });
-  });
 
-  // 奇数試合で終わった場合
-  if(courtNum === 2 && globalIndex % 2 === 1){
     displayNum++;
-  }
+  });
 
   // =========================
   // 同時試合ごとに審判決定
