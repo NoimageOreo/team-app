@@ -368,8 +368,7 @@ function renderMatches(matches,highlightKey=null){
     const courtCol = m.courtName === 'コート1' || m.courtName === 'コート' ? '#4f46e5' : '#0891b2';
     
     return `<div class="match-row" style="${isPlay?'background:#fffbeb;border-radius:.5rem;padding:.3rem .5rem;':isRef?'background:#f0fdf4;border-radius:.5rem;padding:.3rem .5rem;':''}">
-      <div style="width:22px;height:22px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#374151;flex-shrink:0">${m.num}</div>
-      ${m.courtName ? `<div style="font-size:.65rem;font-weight:800;color:white;background:${courtCol};padding:.15rem .4rem;border-radius:.25rem;margin-right:.25rem;flex-shrink:0">${m.courtName}</div>` : ''}
+      <div style="width:22px;height:22px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#374151;flex-shrink:0">${m.displayNum || m.num}</div>      ${m.courtName ? `<div style="font-size:.65rem;font-weight:800;color:white;background:${courtCol};padding:.15rem .4rem;border-radius:.25rem;margin-right:.25rem;flex-shrink:0">${m.courtName}</div>` : ''}
       <div style="flex:1">
         <span style="font-weight:700;color:${c1.bg}">チーム${tNum(m.t1)}</span>
         <span style="color:#9ca3af;margin:0 .25rem">vs</span>
@@ -684,6 +683,7 @@ function buildCourts(teams){
       });
 
       const fixed = rotation[0];
+
       const rest = rotation.slice(1);
 
       rest.unshift(rest.pop());
@@ -695,7 +695,7 @@ function buildCourts(teams){
   }
 
   // =========================
-  // 男女別対応（修正版）
+  // 男女別対応
   // =========================
 
   let allSlots = [];
@@ -718,25 +718,19 @@ function buildCourts(teams){
       femaleSlots.length
     );
 
-    // 同じラウンドの男女試合を同時開催にする
     for(let i = 0; i < maxRounds; i++){
 
-      const mergedMatches = [];
-
       if(maleSlots[i]){
-        mergedMatches.push(...maleSlots[i].matches);
+        allSlots.push({
+          ...maleSlots[i],
+          gender: "male"
+        });
       }
 
       if(femaleSlots[i]){
-        mergedMatches.push(...femaleSlots[i].matches);
-      }
-
-      if(mergedMatches.length > 0){
-
         allSlots.push({
-          matches: mergedMatches,
-          round: i + 1,
-          gender: "mixed"
+          ...femaleSlots[i],
+          gender: "female"
         });
       }
     }
@@ -769,13 +763,10 @@ function buildCourts(teams){
       k => !playingTeams.has(k)
     );
 
-    // 男女別時は同性優先
-    if(gameMode === "separate"){
-
-      const matchGender = teams[slot.matches[0]?.t1]?.gender;
+    if(gameMode === "separate" && slot.gender){
 
       const genderCandidates = candidates.filter(
-        k => teams[k].gender === matchGender
+        k => teams[k].gender === slot.gender
       );
 
       if(genderCandidates.length > 0){
@@ -806,29 +797,45 @@ function buildCourts(teams){
   let court1 = [];
   let court2 = [];
 
-  let matchNum = 1;
+  let court1Num = 1;
+  let court2Num = 1;
 
   allSlots.forEach(slot => {
 
-    slot.matches.forEach((match,index) => {
+    slot.matches.forEach((match) => {
 
       const obj = {
         ...match,
         ref: slot.ref || null,
-        num: matchNum++,
         round: slot.round
       };
 
       if(courtNum === 1){
 
+        obj.displayNum = `${court1Num}`;
+
         court1.push(obj);
+
+        court1Num++;
 
       }else{
 
-        if(index % 2 === 0){
+        // 全体で交互に振り分け
+        if((court1.length + court2.length) % 2 === 0){
+
+          obj.displayNum = `${court1Num}`;
+
           court1.push(obj);
+
+          court1Num++;
+
         }else{
+
+          obj.displayNum = `${court2Num}'`;
+
           court2.push(obj);
+
+          court2Num++;
         }
       }
     });
@@ -845,6 +852,7 @@ function buildCourts(teams){
     } : null
   };
 }
+
 function copyCode(){
   navigator.clipboard?.writeText(roomCode).catch(()=>{});
   document.getElementById("copy-btn").textContent="✓";
