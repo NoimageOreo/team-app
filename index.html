@@ -46,7 +46,7 @@ input:focus{border-color:#4f46e5}
   padding:.55rem 0;
   border-bottom:1px solid rgba(255,255,255,.15);
   font-size:.82rem;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
 }
 .match-row:last-child{border-bottom:none}
 .badge{font-size:.68rem;padding:.15rem .45rem;border-radius:9999px;font-weight:700;flex-shrink:0}
@@ -489,10 +489,10 @@ function renderMatches(matches,highlightKey=null){
     ${m.courtName}
   </div>
 ` : ''}
-      <div style="
+     <div style="
   flex:1;
-  min-width:120px;
-  word-break:keep-all;
+  min-width:0;
+  white-space:nowrap;
 ">
         <span style="font-weight:700;color:${c1.bg}">チーム${tNum(m.t1)}</span>
         <span style="color:#9ca3af;margin:0 .25rem">vs</span>
