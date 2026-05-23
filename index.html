@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>どーなっつ チーム分けアプリ</title>
 <meta property="og:title" content="どーなっつ チーム分けアプリ" />
-<meta property="og:description" content="どーなっつ専用チーム分けアプリ" />
+<meta property="og:description" content="どーなっつ専用チーム分けアプリだよ～" />
 <meta property="og:type" content="website" />
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -89,7 +89,7 @@ input:focus{border-color:#4f46e5}
       <p style="color:rgba(255,255,255,.8);font-size:.75rem;font-weight:600;margin-bottom:.25rem">あなたのチーム</p>
       <p id="p-num" style="font-size:7rem;font-weight:900;color:white;line-height:1"></p>
       <p id="p-label" style="font-size:1.2rem;font-weight:700;color:rgba(255,255,255,.9)"></p>
-      <p id="p-court" style="font-size:.85rem;color:rgba(255,255,255,.75);margin-top:.3rem"></p>
+      <p id="p-court" style="font-size:.85rem;color:rgba(255,255,255,.9);font-weight:700;margin-top:.4rem;background:rgba(0,0,0,.15);display:inline-block;padding:.3rem .8rem;border-radius:999px"></p>
     </div>
     <div id="p-wait" class="card" style="text-align:center;padding:2rem">
       <p style="font-size:2rem;margin-bottom:.5rem">⏳</p>
@@ -100,7 +100,7 @@ input:focus{border-color:#4f46e5}
       <div id="p-members"></div>
     </div>
     <div id="p-schedule-card" class="card" style="display:none">
-      <h3 style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:.75rem">📋 試合スケジュール</h3>
+      <h3 style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:.75rem">📋 あなたの試合スケジュール</h3>
       <div id="p-schedule"></div>
     </div>
     <div id="p-all-card" class="card" style="display:none">
@@ -302,12 +302,20 @@ function renderParticipant(room){
     document.getElementById("p-label").textContent=`チーム ${tNum(myKey)}`;
     document.getElementById("p-wait").style.display="none";
 
-    let myCourtName="",myCourtKey="";
+    // 複数コートをまたいで試合があるか判定
+    let myCourtName="", myCourtKeys=[];
     if(room.schedule){
-      if(room.schedule.court1?.teamKeys?.includes(myKey)){myCourtName=(room.schedule.court2?"コート1":"コート");myCourtKey="court1";}
-      else if(room.schedule.court2?.teamKeys?.includes(myKey)){myCourtName="コート2";myCourtKey="court2";}
+      const inC1 = room.schedule.court1?.matches?.some(m => m.t1 === myKey || m.t2 === myKey || m.ref === myKey);
+      const inC2 = room.schedule.court2?.matches?.some(m => m.t1 === myKey || m.t2 === myKey || m.ref === myKey);
+      if(inC1) myCourtKeys.push("court1");
+      if(inC2) myCourtKeys.push("court2");
+      
+      if(inC1 && inC2) myCourtName = "複数コート移動";
+      else if(inC1) myCourtName = (room.schedule.court2?.matches?.length ? "コート1" : "コート");
+      else if(inC2) myCourtName = "コート2";
     }
     document.getElementById("p-court").textContent=myCourtName?`📍 ${myCourtName}`:"";
+    
     const mems=Object.values(myTeam.members||{});
     document.getElementById("p-member-title").textContent=`あなたのチームメンバー（${mems.length}人）`;
     document.getElementById("p-members").innerHTML=mems.map(m=>`
@@ -319,8 +327,19 @@ function renderParticipant(room){
       </div>`).join("");
     document.getElementById("p-members-card").style.display="block";
 
-    if(myCourtKey&&room.schedule?.[myCourtKey]?.matches?.length>0){
-      document.getElementById("p-schedule").innerHTML=renderMatches(room.schedule[myCourtKey].matches,myKey);
+    // スケジュール表示部分
+    if(myCourtKeys.length > 0){
+      let html = "";
+      myCourtKeys.forEach(ck => {
+        const ms = room.schedule[ck].matches || [];
+        if(myCourtKeys.length > 1) {
+          const cName = ck==="court1" ? "コート1" : "コート2";
+          const cCol = ck==="court1" ? "#4338ca" : "#0891b2";
+          html += `<div style="font-size:.75rem;font-weight:800;color:${cCol};margin-bottom:.4rem;margin-top:${html?'.75rem':'0'}">🏟 ${cName}</div>`;
+        }
+        html += renderMatches(ms, myKey);
+      });
+      document.getElementById("p-schedule").innerHTML = html;
       document.getElementById("p-schedule-card").style.display="block";
     }
 
@@ -497,14 +516,28 @@ function renderAdmin(room){
   // Schedule
   if(room.schedule&&room.gameStarted){
     document.getElementById("a-sched-sec").style.display="block";
-    const isSingleCourt = !room.schedule.court2?.teamKeys?.length;
+    const isSingleCourt = !room.schedule.court2?.matches?.length;
     const courts=[{k:"court1",l:isSingleCourt?"コート":"コート1",c:"#4338ca"},{k:"court2",l:"コート2",c:"#0891b2"}];
     document.getElementById("a-sched").innerHTML=courts.map(({k,l,c})=>{
       const court=room.schedule[k];
-      if(!court?.teamKeys?.length)return"";
-      const teamNums=court.teamKeys.map(tk=>`チーム${tNum(tk)}`).join("・");
-      const genderLabel=room.teams[court.teamKeys[0]]?.gender;
-      const gLabel=genderLabel==='male'?'👦男子':genderLabel==='female'?'👧女子':'';
+      if(!court?.matches?.length)return"";
+      
+      let teamNums="参加全チーム";
+      if(court.teamKeys && court.teamKeys.length < Object.keys(room.teams).length) {
+        teamNums=court.teamKeys.map(tk=>`チーム${tNum(tk)}`).join("・");
+      }
+      
+      const hasM=court.matches.some(m=>room.teams[m.t1]?.gender==='male');
+      const hasF=court.matches.some(m=>room.teams[m.t1]?.gender==='female');
+      let gLabel="";
+      if(gameMode==="separate"){
+        if(hasM && !hasF) gLabel="👦男子のみ";
+        else if(!hasM && hasF) gLabel="👧女子のみ";
+        else gLabel="🔀 男女共用";
+      } else {
+        gLabel="混合リーグ";
+      }
+
       return `<div style="background:${c};border-radius:1.25rem;padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
           <span style="background:rgba(255,255,255,.2);color:white;font-size:.8rem;font-weight:800;padding:.3rem .75rem;border-radius:9999px">🏟 ${l} ${gLabel}</span>
@@ -554,16 +587,16 @@ async function doShuffle(){
       }
     }
   } else {
+    // 混合モード：全チームに順番に男子を配り、そのあとに女子を順番に配ることで男女比を完全に均等化
     const males=[...all.filter(p=>p.gender==='male')].sort(()=>Math.random()-.5);
     const females=[...all.filter(p=>p.gender==='female')].sort(()=>Math.random()-.5);
-    const interleaved=[];let mi=0,fi=0;
-    while(mi<males.length||fi<females.length){if(mi<males.length)interleaved.push(males[mi++]);if(fi<females.length)interleaved.push(females[fi++]);}
-    if(divMode==="count"){
-      for(let i=0;i<interleaved.length;i+=sz){const chunk=interleaved.slice(i,i+sz);const mem={};chunk.forEach(m=>mem[m.id]=m);teams[`team${ti}`]={id:`team${ti}`,members:mem,gender:'mixed'};ti++;}
-    } else {
-      for(let i=0;i<sz;i++){teams[`team${i}`]={id:`team${i}`,members:{},gender:'mixed'};}
-      interleaved.forEach((m,i)=>{teams[`team${i%sz}`].members[m.id]=m;});
-    }
+    const tCount=divMode==="count"?Math.ceil(all.length/sz):sz;
+    const actualTC=Math.max(1,tCount);
+    for(let i=0;i<actualTC;i++){teams[`team${i}`]={id:`team${i}`,members:{},gender:'mixed'};}
+    
+    males.forEach((m,i)=>{teams[`team${i%actualTC}`].members[m.id]=m;});
+    const offset=males.length;
+    females.forEach((m,i)=>{teams[`team${(i+offset)%actualTC}`].members[m.id]=m;});
   }
 
   const schedule=buildCourts(teams);
@@ -575,22 +608,52 @@ async function doShuffle(){
 function buildCourts(teams){
   const keys=Object.keys(teams);
   
-  if(courtNum === 1){
-    return {court1: {teamKeys: keys, matches: roundRobin(keys)}};
-  }
-
-  let c1=[],c2=[];
   if(gameMode==="separate"){
     const mK=keys.filter(k=>teams[k].gender==='male');
     const fK=keys.filter(k=>teams[k].gender==='female');
-    if(mK.length>=2&&fK.length>=2){c1=mK;c2=fK;}
-    else if(mK.length>0&&fK.length===0){const m=Math.ceil(mK.length/2);c1=mK.slice(0,m);c2=mK.slice(m);}
-    else if(fK.length>0&&mK.length===0){const m=Math.ceil(fK.length/2);c1=fK.slice(0,m);c2=fK.slice(m);}
-    else{const m=Math.ceil(keys.length/2);c1=keys.slice(0,m);c2=keys.slice(m);}
+    
+    // 男子と女子の試合をそれぞれ作成（チームが同性同士の試合のみになる）
+    const mMatches=roundRobin(mK);
+    const fMatches=roundRobin(fK);
+
+    // チーム数の比率に応じて男子の試合と女子の試合を均等に混ぜ合わせる
+    let combined=[];
+    let m=0, f=0;
+    while(m < mMatches.length || f < fMatches.length){
+      if(m < mMatches.length && (f === fMatches.length || (m * fMatches.length <= f * mMatches.length))){
+        combined.push(mMatches[m++]);
+      } else {
+        combined.push(fMatches[f++]);
+      }
+    }
+
+    // 全体の通し番号を再設定する
+    combined.forEach((match, i) => match.num = i + 1);
+
+    if(courtNum===1){
+      // 1コートの場合は全試合をコート1へ
+      return { court1: { teamKeys: keys, matches: combined } };
+    } else {
+      // 2コートの場合は出来上がった試合を順番にコート1と2へ振り分ける
+      let c1Matches=[], c2Matches=[];
+      combined.forEach((match, i) => {
+        if(i % 2 === 0) c1Matches.push(match);
+        else c2Matches.push(match);
+      });
+      return {
+        court1: { teamKeys: keys, matches: c1Matches },
+        court2: { teamKeys: keys, matches: c2Matches }
+      };
+    }
   } else {
-    const m=Math.ceil(keys.length/2);c1=keys.slice(0,m);c2=keys.slice(m);
+    // 混合モード
+    if(courtNum===1){
+      return{court1:{teamKeys:keys,matches:roundRobin(keys)}};
+    } else {
+      const m=Math.ceil(keys.length/2);const c1=keys.slice(0,m),c2=keys.slice(m);
+      return{court1:{teamKeys:c1,matches:roundRobin(c1)},court2:{teamKeys:c2,matches:roundRobin(c2)}};
+    }
   }
-  return{court1:{teamKeys:c1,matches:roundRobin(c1)},court2:{teamKeys:c2,matches:roundRobin(c2)}};
 }
 
 function roundRobin(keys){
