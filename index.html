@@ -691,7 +691,6 @@ function buildCourts(teams){
       });
 
       const fixed = rotation[0];
-
       const rest = rotation.slice(1);
 
       rest.unshift(rest.pop());
@@ -706,7 +705,7 @@ function buildCourts(teams){
   // 男女別対応
   // =========================
 
-  let allSlots = [];
+  let allRounds = [];
 
   if(gameMode === "separate"){
 
@@ -718,26 +717,26 @@ function buildCourts(teams){
       k => teams[k].gender === "female"
     );
 
-    const maleSlots = createRoundRobin(maleKeys);
-    const femaleSlots = createRoundRobin(femaleKeys);
+    const maleRounds = createRoundRobin(maleKeys);
+    const femaleRounds = createRoundRobin(femaleKeys);
 
     const maxRounds = Math.max(
-      maleSlots.length,
-      femaleSlots.length
+      maleRounds.length,
+      femaleRounds.length
     );
 
     for(let i = 0; i < maxRounds; i++){
 
-      if(maleSlots[i]){
-        allSlots.push({
-          ...maleSlots[i],
+      if(maleRounds[i]){
+        allRounds.push({
+          ...maleRounds[i],
           gender: "male"
         });
       }
 
-      if(femaleSlots[i]){
-        allSlots.push({
-          ...femaleSlots[i],
+      if(femaleRounds[i]){
+        allRounds.push({
+          ...femaleRounds[i],
           gender: "female"
         });
       }
@@ -745,11 +744,11 @@ function buildCourts(teams){
 
   }else{
 
-    allSlots = createRoundRobin(keys);
+    allRounds = createRoundRobin(keys);
   }
 
   // =========================
-  // 審判回数均等化
+  // 審判均等化
   // =========================
 
   const refCount = {};
@@ -758,77 +757,37 @@ function buildCourts(teams){
     refCount[k] = 0;
   });
 
-  allSlots.forEach((slot, index)=>{
+  allRounds.forEach(round=>{
 
-    // =========================
-    // 同タイミングで試合してるチームを全部取得
-    // =========================
+    const playing = new Set();
 
-    const playingTeams = new Set();
-
-    // 自分のslot
-    slot.matches.forEach(m=>{
-
-      playingTeams.add(m.t1);
-      playingTeams.add(m.t2);
-
+    round.matches.forEach(m=>{
+      playing.add(m.t1);
+      playing.add(m.t2);
     });
 
-    // 前slot（同ラウンド）
-    const prev = allSlots[index - 1];
-
-    if(prev && prev.round === slot.round){
-
-      prev.matches.forEach(m=>{
-
-        playingTeams.add(m.t1);
-        playingTeams.add(m.t2);
-
-      });
-    }
-
-    // 次slot（同ラウンド）
-    const next = allSlots[index + 1];
-
-    if(next && next.round === slot.round){
-
-      next.matches.forEach(m=>{
-
-        playingTeams.add(m.t1);
-        playingTeams.add(m.t2);
-
-      });
-    }
-
-    // =========================
-    // 試合してないチームのみ候補
-    // =========================
-
     let candidates = keys.filter(
-      k => !playingTeams.has(k)
+      k => !playing.has(k)
     );
 
-    // 男女別なら同性別優先
-    if(gameMode === "separate" && slot.gender){
+    if(gameMode === "separate" && round.gender){
 
-      const genderCandidates = candidates.filter(
-        k => teams[k].gender === slot.gender
+      const sameGender = candidates.filter(
+        k => teams[k].gender === round.gender
       );
 
-      if(genderCandidates.length > 0){
-        candidates = genderCandidates;
+      if(sameGender.length){
+        candidates = sameGender;
       }
     }
 
-    // 候補ゼロなら審判なし
     if(candidates.length === 0){
 
-      slot.ref = null;
+      round.ref = null;
 
       return;
     }
 
-    // 審判回数少ない順
     candidates.sort((a,b)=>{
 
       if(refCount[a] !== refCount[b]){
@@ -838,58 +797,144 @@ function buildCourts(teams){
       return Math.random() - 0.5;
     });
 
-    // 同ラウンド両コート同じ審判
-    slot.ref = candidates[0];
+    round.ref = candidates[0];
 
-    refCount[slot.ref]++;
+    refCount[round.ref]++;
   });
 
   // =========================
-  // コート割り当て
+  // コート生成
   // =========================
 
   let court1 = [];
   let court2 = [];
 
-  let court1Num = 1;
-  let court2Num = 1;
+  let num1 = 1;
+  let num2 = 1;
 
-  allSlots.forEach(slot => {
+  // 直前に出たチーム記録
+  let lastTeamsCourt1 = new Set();
+  let lastTeamsCourt2 = new Set();
 
-    slot.matches.forEach((match) => {
+  allRounds.forEach(round=>{
+
+    // ラウンド内シャッフル
+    let matches = [...round.matches];
+
+    matches.sort(()=>Math.random()-0.5);
+
+    matches.forEach(match=>{
+
+      const currentTeams = new Set([
+        match.t1,
+        match.t2
+      ]);
 
       const obj = {
         ...match,
-        ref: slot.ref || null,
-        round: slot.round
+        ref: round.ref || null,
+        round: round.round
       };
+
+      // =========================
+      // 1コート
+      // =========================
 
       if(courtNum === 1){
 
-        obj.displayNum = `${court1Num}`;
+        obj.displayNum = `${num1}`;
 
         court1.push(obj);
 
-        court1Num++;
+        lastTeamsCourt1 = currentTeams;
 
-      }else{
+        num1++;
 
-        // 交互振り分け
-        if((court1.length + court2.length) % 2 === 0){
+        return;
+      }
 
-          obj.displayNum = `${court1Num}`;
+      // =========================
+      // 2コート
+      // =========================
+
+      const hit1 =
+        [...currentTeams].some(t=>lastTeamsCourt1.has(t));
+
+      const hit2 =
+        [...currentTeams].some(t=>lastTeamsCourt2.has(t));
+
+      // 両方空いてる
+      if(!hit1 && !hit2){
+
+        if(court1.length <= court2.length){
+
+          obj.displayNum = `${num1}`;
 
           court1.push(obj);
 
-          court1Num++;
+          lastTeamsCourt1 = currentTeams;
+
+          num1++;
 
         }else{
 
-          obj.displayNum = `${court2Num}`;
+          obj.displayNum = `${num2}`;
 
           court2.push(obj);
 
-          court2Num++;
+          lastTeamsCourt2 = currentTeams;
+
+          num2++;
+        }
+
+      }
+
+      // court1だけ被る
+      else if(hit1 && !hit2){
+
+        obj.displayNum = `${num2}`;
+
+        court2.push(obj);
+
+        lastTeamsCourt2 = currentTeams;
+
+        num2++;
+      }
+
+      // court2だけ被る
+      else if(!hit1 && hit2){
+
+        obj.displayNum = `${num1}`;
+
+        court1.push(obj);
+
+        lastTeamsCourt1 = currentTeams;
+
+        num1++;
+      }
+
+      // 両方被る
+      else{
+
+        if(court1.length <= court2.length){
+
+          obj.displayNum = `${num1}`;
+
+          court1.push(obj);
+
+          lastTeamsCourt1 = currentTeams;
+
+          num1++;
+
+        }else{
+
+          obj.displayNum = `${num2}`;
+
+          court2.push(obj);
+
+          lastTeamsCourt2 = currentTeams;
+
+          num2++;
         }
       }
     });
