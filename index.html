@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>どーなっつチーム分け</title>
+<title>どーなっつ チーム分けアプリ</title>
+<meta property="og:title" content="どーなっつ チーム分けアプリ" />
+<meta property="og:description" content="チーム分け・対戦表作成ツール" />
+<meta property="og:type" content="website" />
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f4f6;min-height:100vh}
@@ -43,7 +46,6 @@ input:focus{border-color:#4f46e5}
 </head>
 <body>
 
-<!-- HOME -->
 <div id="s-home" style="display:none;min-height:100vh;background:linear-gradient(135deg,#3730a3,#7c3aed);align-items:center;justify-content:center;padding:1rem">
   <div style="background:white;border-radius:1.5rem;padding:2rem;width:100%;max-width:360px;box-shadow:0 20px 40px rgba(0,0,0,.3)">
     <div style="text-align:center;font-size:3rem;margin-bottom:.5rem">👥</div>
@@ -67,7 +69,6 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
-<!-- WAITING -->
 <div id="s-waiting" style="display:none;min-height:100vh;background:linear-gradient(135deg,#fffbeb,#fef3c7);align-items:center;justify-content:center;padding:1rem">
   <div style="background:white;border-radius:1.5rem;padding:2.5rem 2rem;text-align:center;max-width:320px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.1)">
     <div class="spin"></div>
@@ -82,7 +83,6 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
-<!-- PARTICIPANT -->
 <div id="s-participant" style="display:none;min-height:100vh;background:#f3f4f6;padding:1rem">
   <div style="max-width:400px;margin:0 auto">
     <div id="p-hero" style="display:none;border-radius:1.5rem;padding:2rem;text-align:center;margin-bottom:1rem">
@@ -111,7 +111,6 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
-<!-- ADMIN -->
 <div id="s-admin" style="display:none;min-height:100vh;background:#f3f4f6;padding-bottom:2rem">
   <div style="background:#4338ca;color:white;padding:1.25rem 1rem 1.5rem">
     <div style="max-width:500px;margin:0 auto">
@@ -126,7 +125,6 @@ input:focus{border-color:#4f46e5}
   </div>
   <div style="max-width:500px;margin:0 auto;padding:1rem">
 
-    <!-- 申請 -->
     <div id="a-req-sec" class="card" style="display:none">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></div>
@@ -136,16 +134,23 @@ input:focus{border-color:#4f46e5}
       <div id="a-req-list"></div>
     </div>
 
-    <!-- 設定 -->
     <div id="a-setup-sec" class="card">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#4f46e5"></div>チーム設定
       </div>
+      
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem">試合モード</p>
       <div class="tgl-grp" style="margin-bottom:1rem">
         <button class="tgl on" id="mode-mixed" onclick="setGameMode('mixed')">🔀 混合</button>
         <button class="tgl" id="mode-sep" onclick="setGameMode('separate')">⚥ 男女別</button>
       </div>
+
+      <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem">使用コート数</p>
+      <div class="tgl-grp" style="margin-bottom:1rem">
+        <button class="tgl" id="court-1" onclick="setCourtNum(1)">1コート（全体）</button>
+        <button class="tgl on" id="court-2" onclick="setCourtNum(2)">2コート</button>
+      </div>
+
       <div style="display:flex;border-radius:.75rem;overflow:hidden;border:1px solid #e5e7eb;margin-bottom:1rem">
         <button id="dc-btn" onclick="setDivMode('count')" style="flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:#4f46e5;color:white">👤 人数で分ける</button>
         <button id="dt-btn" onclick="setDivMode('team')" style="flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:white;color:#6b7280">🏷 チーム数で分ける</button>
@@ -162,7 +167,6 @@ input:focus{border-color:#4f46e5}
       <button id="a-shuffle" onclick="doShuffle()" disabled style="width:100%;background:#4f46e5;color:white;border:none;padding:.9rem;border-radius:.75rem;font-size:.9rem;font-weight:700;cursor:pointer;opacity:.4">🔀 ランダムでチーム分けする</button>
     </div>
 
-    <!-- 承認済み -->
     <div class="card">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#10b981"></div>
@@ -171,7 +175,6 @@ input:focus{border-color:#4f46e5}
       <div id="a-approved-list"><div class="empty">まだ参加者がいません</div></div>
     </div>
 
-    <!-- チーム結果 -->
     <div id="a-teams-sec" class="card" style="display:none">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#8b5cf6"></div>チーム結果
@@ -180,7 +183,6 @@ input:focus{border-color:#4f46e5}
       <div id="a-teams-list"></div>
     </div>
 
-    <!-- スケジュール -->
     <div id="a-sched-sec" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
         <h3 style="font-size:.9rem;font-weight:800;color:#374151">📋 試合スケジュール</h3>
@@ -218,7 +220,7 @@ let roomCode=localStorage.getItem("roomCode")||"";
 let myName=localStorage.getItem("myName")||"";
 let myGender=localStorage.getItem("myGender")||"male";
 let isAdminSession=localStorage.getItem("isAdmin")==="true";
-let pollTimer=null,currentTab="create",adminJoin=true,divMode="count",gameMode="mixed";
+let pollTimer=null,currentTab="create",adminJoin=true,divMode="count",gameMode="mixed",courtNum=2;
 
 async function dbGet(p){const r=await fetch(`${DB}/${p}.json`);return r.json();}
 async function dbSet(p,d){await fetch(`${DB}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});}
@@ -302,11 +304,10 @@ function renderParticipant(room){
 
     let myCourtName="",myCourtKey="";
     if(room.schedule){
-      if(room.schedule.court1?.teamKeys?.includes(myKey)){myCourtName="コート1";myCourtKey="court1";}
+      if(room.schedule.court1?.teamKeys?.includes(myKey)){myCourtName=(room.schedule.court2?"コート1":"コート");myCourtKey="court1";}
       else if(room.schedule.court2?.teamKeys?.includes(myKey)){myCourtName="コート2";myCourtKey="court2";}
     }
     document.getElementById("p-court").textContent=myCourtName?`📍 ${myCourtName}`:"";
-
     const mems=Object.values(myTeam.members||{});
     document.getElementById("p-member-title").textContent=`あなたのチームメンバー（${mems.length}人）`;
     document.getElementById("p-members").innerHTML=mems.map(m=>`
@@ -374,6 +375,12 @@ function setGameMode(mode){
   document.getElementById("mode-sep").className="tgl"+(mode==="separate"?" on":"");
 }
 
+function setCourtNum(num){
+  courtNum=num;
+  document.getElementById("court-1").className="tgl"+(num===1?" on":"");
+  document.getElementById("court-2").className="tgl"+(num===2?" on":"");
+}
+
 function setDivMode(mode){
   divMode=mode;
   document.getElementById("dc-btn").style.cssText=`flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:${mode==="count"?"#4f46e5":"white"};color:${mode==="count"?"white":"#6b7280"}`;
@@ -408,7 +415,7 @@ function renderAdmin(room){
   const totalCount=adminJoin?approved.length+1:approved.length;
 
   document.getElementById("a-code").textContent=roomCode;
-  document.getElementById("a-stats").textContent=`承認済み: ${approved.length}人 👦${approved.filter(p=>p.gender==='male').length} 👧${approved.filter(p=>p.gender==='female').length}　申請中: ${waiting.length}人`;
+  document.getElementById("a-stats").textContent=`承認済み: ${approved.length}人 👦${approved.filter(p=>p.gender==='male').length} 👧${approved.filter(p=>p.gender==='female').length} 申請中: ${waiting.length}人`;
   document.getElementById("a-badge").textContent=room.gameStarted?"🏃 試合中":"⏳ 待機中";
   document.getElementById("a-badge").style.background=room.gameStarted?"#10b981":"#4f46e5";
 
@@ -437,7 +444,7 @@ function renderAdmin(room){
     if(gameMode==="separate"){
       const mT=divMode==="count"?Math.ceil(maleCount/Math.max(room.teamSize,1)):Math.round((room.teamSize||4)*maleCount/Math.max(totalCount,1));
       const fT=divMode==="count"?Math.ceil(femaleCount/Math.max(room.teamSize,1)):Math.max(0,(room.teamSize||4)-mT);
-      prev=`👦男子 ${maleCount}人 → 約${mT}チーム　👧女子 ${femaleCount}人 → 約${fT}チーム`;
+      prev=`👦男子 ${maleCount}人 → 約${mT}チーム 👧女子 ${femaleCount}人 → 約${fT}チーム`;
     } else {
       const sz=room.teamSize||5;
       prev=divMode==="count"
@@ -490,7 +497,8 @@ function renderAdmin(room){
   // Schedule
   if(room.schedule&&room.gameStarted){
     document.getElementById("a-sched-sec").style.display="block";
-    const courts=[{k:"court1",l:"コート1",c:"#4338ca"},{k:"court2",l:"コート2",c:"#0891b2"}];
+    const isSingleCourt = !room.schedule.court2?.teamKeys?.length;
+    const courts=[{k:"court1",l:isSingleCourt?"コート":"コート1",c:"#4338ca"},{k:"court2",l:"コート2",c:"#0891b2"}];
     document.getElementById("a-sched").innerHTML=courts.map(({k,l,c})=>{
       const court=room.schedule[k];
       if(!court?.teamKeys?.length)return"";
@@ -566,6 +574,11 @@ async function doShuffle(){
 
 function buildCourts(teams){
   const keys=Object.keys(teams);
+  
+  if(courtNum === 1){
+    return {court1: {teamKeys: keys, matches: roundRobin(keys)}};
+  }
+
   let c1=[],c2=[];
   if(gameMode==="separate"){
     const mK=keys.filter(k=>teams[k].gender==='male');
