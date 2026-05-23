@@ -667,7 +667,7 @@ function buildCourts(teams){
 
     for(let round = 0; round < rounds; round++){
 
-      let matches = [];
+      const matches = [];
 
       for(let i = 0; i < half; i++){
 
@@ -680,14 +680,13 @@ function buildCourts(teams){
 
         matches.push({
           t1,
-          t2,
-          round: round + 1
+          t2
         });
       }
 
       result.push({
-        matches,
-        round: round + 1
+        round: round + 1,
+        matches
       });
 
       const fixed = rotation[0];
@@ -748,7 +747,8 @@ function buildCourts(teams){
   }
 
   // =========================
-  // 審判均等化
+  // 審判決定
+  // 「同ラウンドで1チーム」
   // =========================
 
   const refCount = {};
@@ -770,6 +770,7 @@ function buildCourts(teams){
       k => !playing.has(k)
     );
 
+    // 男女別なら同性のみ優先
     if(gameMode === "separate" && round.gender){
 
       const sameGender = candidates.filter(
@@ -806,138 +807,124 @@ function buildCourts(teams){
   // コート生成
   // =========================
 
-  let court1 = [];
-  let court2 = [];
+  const court1 = [];
+  const court2 = [];
 
-  let num1 = 1;
-  let num2 = 1;
+  let num = 1;
 
-  // 直前に出たチーム記録
-  let lastTeamsCourt1 = new Set();
-  let lastTeamsCourt2 = new Set();
+  let lastPlaying = new Set();
 
   allRounds.forEach(round=>{
 
-    // ラウンド内シャッフル
     let matches = [...round.matches];
 
+    // ラウンド内シャッフル
     matches.sort(()=>Math.random()-0.5);
 
-    matches.forEach(match=>{
+    // =========================
+    // 連続試合軽減
+    // =========================
 
-      const currentTeams = new Set([
-        match.t1,
-        match.t2
-      ]);
+    matches.sort((a,b)=>{
 
-      const obj = {
-        ...match,
-        ref: round.ref || null,
-        round: round.round
-      };
+      const aBusy =
+        lastPlaying.has(a.t1) ||
+        lastPlaying.has(a.t2);
 
-      // =========================
-      // 1コート
-      // =========================
+      const bBusy =
+        lastPlaying.has(b.t1) ||
+        lastPlaying.has(b.t2);
 
-      if(courtNum === 1){
-
-        obj.displayNum = `${num1}`;
-
-        court1.push(obj);
-
-        lastTeamsCourt1 = currentTeams;
-
-        num1++;
-
-        return;
-      }
-
-      // =========================
-      // 2コート
-      // =========================
-
-      const hit1 =
-        [...currentTeams].some(t=>lastTeamsCourt1.has(t));
-
-      const hit2 =
-        [...currentTeams].some(t=>lastTeamsCourt2.has(t));
-
-      // 両方空いてる
-      if(!hit1 && !hit2){
-
-        if(court1.length <= court2.length){
-
-          obj.displayNum = `${num1}`;
-
-          court1.push(obj);
-
-          lastTeamsCourt1 = currentTeams;
-
-          num1++;
-
-        }else{
-
-          obj.displayNum = `${num2}`;
-
-          court2.push(obj);
-
-          lastTeamsCourt2 = currentTeams;
-
-          num2++;
-        }
-
-      }
-
-      // court1だけ被る
-      else if(hit1 && !hit2){
-
-        obj.displayNum = `${num2}`;
-
-        court2.push(obj);
-
-        lastTeamsCourt2 = currentTeams;
-
-        num2++;
-      }
-
-      // court2だけ被る
-      else if(!hit1 && hit2){
-
-        obj.displayNum = `${num1}`;
-
-        court1.push(obj);
-
-        lastTeamsCourt1 = currentTeams;
-
-        num1++;
-      }
-
-      // 両方被る
-      else{
-
-        if(court1.length <= court2.length){
-
-          obj.displayNum = `${num1}`;
-
-          court1.push(obj);
-
-          lastTeamsCourt1 = currentTeams;
-
-          num1++;
-
-        }else{
-
-          obj.displayNum = `${num2}`;
-
-          court2.push(obj);
-
-          lastTeamsCourt2 = currentTeams;
-
-          num2++;
-        }
-      }
+      return aBusy - bBusy;
     });
+
+    // =========================
+    // 1コート
+    // =========================
+
+    if(courtNum === 1){
+
+      matches.forEach(match=>{
+
+        court1.push({
+          ...match,
+          ref: round.ref,
+          round: round.round,
+          num,
+          displayNum: `${num}`
+        });
+
+        lastPlaying = new Set([
+          match.t1,
+          match.t2
+        ]);
+
+        num++;
+      });
+
+      return;
+    }
+
+    // =========================
+    // 2コート
+    // 同番号 = 同時試合
+    // =========================
+
+    const currentPlaying = new Set();
+
+    if(matches[0]){
+
+      court1.push({
+        ...matches[0],
+        ref: round.ref,
+        round: round.round,
+        num,
+        displayNum: `${num}`
+      });
+
+      currentPlaying.add(matches[0].t1);
+      currentPlaying.add(matches[0].t2);
+    }
+
+    if(matches[1]){
+
+      court2.push({
+        ...matches[1],
+        ref: round.ref,
+        round: round.round,
+        num,
+        displayNum: `${num}'`
+      });
+
+      currentPlaying.add(matches[1].t1);
+      currentPlaying.add(matches[1].t2);
+    }
+
+    lastPlaying = currentPlaying;
+
+    // =========================
+    // 3試合以上余った場合
+    // =========================
+
+    for(let i = 2; i < matches.length; i++){
+
+      num++;
+
+      court1.push({
+        ...matches[i],
+        ref: round.ref,
+        round: round.round,
+        num,
+        displayNum: `${num}`
+      });
+
+      lastPlaying = new Set([
+        matches[i].t1,
+        matches[i].t2
+      ]);
+    }
+
+    num++;
   });
 
   return {
