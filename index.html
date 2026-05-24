@@ -164,6 +164,12 @@ input:focus{border-color:#4f46e5}
         <button class="t-btn warning" onclick="resetTimer()">🔄 リセット</button>
       </div>
     </div>
+      <div class="timer-ctrls" style="margin-top:.5rem">
+  <input id="custom-timer-input" type="number" min="1" max="99"
+    placeholder="分"
+    style="width:70px;padding:.5rem;border-radius:.5rem;border:1px solid #4b5563;background:#374151;color:white;font-size:1rem;font-weight:700;text-align:center;margin-bottom:0"/>
+  <button class="t-btn" onclick="setCustomTimer()" style="flex:1">⏱ カスタム</button>
+      </div>
 
     <div id="a-req-sec" class="card" style="display:none">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
@@ -271,6 +277,17 @@ input:focus{border-color:#4f46e5}
 </div>
 
 <script>
+const ADMIN_PASSWORD = "donut"; // 好きなパスワードに変更してください
+
+function accessAdmin() {
+    const input = prompt("管理者パスワードを入力してください");
+    if(input === ADMIN_PASSWORD) {
+        show("s-admin");
+    } else {
+        alert("パスワードが違います！");
+    }
+}
+
   let manualGender = "male";
 
 function setManualGender(g){
@@ -567,7 +584,12 @@ async function setTimer(mins) {
   timerState = newState; updateTimerUI();
   if(roomCode) await dbSet(`rooms/${roomCode}/timer`, newState);
 }
-
+async function setCustomTimer() {
+  const val = parseInt(document.getElementById("custom-timer-input").value);
+  if (!val || val < 1) { alert("1以上の分数を入力してください"); return; }
+  await setTimer(val);
+  document.getElementById("custom-timer-input").value = "";
+}
 async function toggleTimer() {
   let newState = {};
   if (timerState.isRunning) {
