@@ -163,14 +163,14 @@ input:focus{border-color:#4f46e5}
         <button id="btn-timer-start" class="t-btn primary" onclick="toggleTimer()">▶ スタート</button>
         <button class="t-btn warning" onclick="resetTimer()">🔄 リセット</button>
       </div>
-    </div>
       <div class="timer-ctrls" style="margin-top:.5rem">
   <input id="custom-timer-input" type="number" min="1" max="99"
     placeholder="分"
     style="width:70px;padding:.5rem;border-radius:.5rem;border:1px solid #4b5563;background:#374151;color:white;font-size:1rem;font-weight:700;text-align:center;margin-bottom:0"/>
   <button class="t-btn" onclick="setCustomTimer()" style="flex:1">⏱ カスタム</button>
       </div>
-
+    </div>
+    
     <div id="a-req-sec" class="card" style="display:none">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></div>
@@ -380,6 +380,8 @@ async function homeAction(){
   if(!name)return showErr("名前を入力してください");
   myName=name;localStorage.setItem("myName",name);
   if(currentTab==="create"){
+    const pw=prompt("管理者パスワードを入力してください");
+    if(pw!==ADMIN_PASSWORD)return showErr("パスワードが違います");
     const code=genCode();
     await dbSet(`rooms/${code}`,{
       adminId:myId, adminName:name, teamSize:5, 
