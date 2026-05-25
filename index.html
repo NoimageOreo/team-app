@@ -972,22 +972,40 @@ function copyCode(){
   setTimeout(()=>document.getElementById("copy-btn").textContent="📋",2000);
 }
 
+let confirmCallback=null;
+function showConfirm(msg,fn){
+  confirmCallback=fn;
+  document.getElementById("confirm-msg").textContent=msg;
+  document.getElementById("confirm-dialog").style.display="flex";
+}
+function confirmOk(){
+  document.getElementById("confirm-dialog").style.display="none";
+  if(confirmCallback)confirmCallback();
+}
+function confirmCancel(){
+  document.getElementById("confirm-dialog").style.display="none";
+  confirmCallback=null;
+}
+
 function clearLocal(){
   localStorage.removeItem("roomCode");localStorage.removeItem("isAdmin");localStorage.removeItem("myName");
   roomCode="";myName="";
 }
 
 async function leaveRoom(){
-  if(!confirm("退出しますか？"))return;
-  stopPoll();
-  if(roomCode&&myId)await dbSet(`rooms/${roomCode}/participants/${myId}/status`,"kicked");
-  clearLocal();show("s-home");
+  showConfirm("退出しますか？", async()=>{
+    stopPoll();
+    if(roomCode&&myId)await dbSet(`rooms/${roomCode}/participants/${myId}/status`,"kicked");
+    clearLocal();show("s-home");
+  });
 }
 
 async function exitRoom(){
-  if(!confirm("ルームを終了しますか？"))return;
-  await dbSet(`rooms/${roomCode}`,null);
-  stopPoll();clearLocal();show("s-home");
+  showConfirm("ルームを終了しますか？", async()=>{
+    stopPoll();
+    await dbSet(`rooms/${roomCode}`,null);
+    clearLocal();show("s-home");
+  });
 }
 
 async function approveAll(){
@@ -1055,5 +1073,14 @@ async function init(){
 }
 init();
 </script>
+<div id="confirm-dialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:1.25rem;padding:1.5rem;margin:1rem;max-width:300px;width:100%">
+    <p id="confirm-msg" style="font-size:.95rem;font-weight:600;color:#1f2937;margin-bottom:1.25rem;text-align:center"></p>
+    <div style="display:flex;gap:.75rem">
+      <button onclick="confirmCancel()" style="flex:1;padding:.75rem;border:2px solid #e5e7eb;border-radius:.75rem;background:white;font-weight:700;cursor:pointer">キャンセル</button>
+      <button onclick="confirmOk()" style="flex:1;padding:.75rem;border:none;border-radius:.75rem;background:#ef4444;color:white;font-weight:700;cursor:pointer">OK</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
