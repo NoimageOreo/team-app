@@ -437,10 +437,10 @@ function renderParticipant(room){
     const currentCourtNum = room.courtNum || 2;
     if(room.schedule){
       if(room.schedule.court1?.matches){
-        room.schedule.court1.matches.forEach(m => myMatches.push({...m, courtName: currentCourtNum===1?'コート':'コート1'}));
+        room.schedule.court1.matches.forEach(m => myMatches.push({...m, courtName: currentCourtNum===1?'コート':'ステージ側'}));
       }
       if(room.schedule.court2?.matches){
-        room.schedule.court2.matches.forEach(m => myMatches.push({...m, courtName: 'コート2'}));
+        room.schedule.court2.matches.forEach(m => myMatches.push({...m, courtName: '出入口側'}));
       }
     }
     
@@ -774,7 +774,7 @@ function renderAdmin(room){
   if(room.schedule&&room.gameStarted){
     document.getElementById("a-sched-sec").style.display="block";
     const isSingleCourt = !room.schedule.court2?.matches?.length;
-    const courts=[{k:"court1",l:isSingleCourt?"コート":"コート1",c:"#4338ca"},{k:"court2",l:"コート2",c:"#0891b2"}];
+    const courts=[{k:"court1",l:isSingleCourt?"コート":"ステージ側",c:"#4338ca"},{k:"court2",l:"出入口側",c:"#0891b2"}];
     document.getElementById("a-sched").innerHTML=courts.map(({k,l,c})=>{
       const court=room.schedule[k];
       if(!court?.matches?.length)return"";
