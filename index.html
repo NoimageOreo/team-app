@@ -930,7 +930,8 @@ function buildCourts(teams) {
       groupMap[g].push(k);
     });
 
-    function makeMatchList(gKeys) {
+    // ペア生成のみ（審判なし）
+    function makeMatchPairs(gKeys) {
       if (gKeys.length < 2) return [];
       let rot = [...gKeys];
       if (rot.length % 2 !== 0) rot.push("BYE");
@@ -943,38 +944,61 @@ function buildCourts(teams) {
         }
         const fixed = rot[0]; const rest = rot.slice(1); rest.unshift(rest.pop()); rot = [fixed, ...rest];
       }
-      const rc = {}; gKeys.forEach(k => rc[k] = 0);
-      return pairs.map((m, i) => {
-        const avail = gKeys.filter(k=>k!==m.t1&&k!==m.t2).sort((a,b)=>rc[a]-rc[b]||Math.random()-.5);
-        const ref = avail[0]||null;
-        if (ref) rc[ref]++;
-        return {...m, ref, num:i+1, displayNum:i+1, slotIndex:i};
-      });
+      return pairs;
     }
 
     const groupEntries = Object.entries(groupMap).filter(([,gk]) => gk.length >= 2);
     if (groupEntries.length === 0) return { court1: { teamKeys: keys, matches: [] }, court2: null };
 
+    // 審判カウントは全チーム共通
+    const refCount = {}; keys.forEach(k => refCount[k] = 0);
+
     if (courtNum === 2 && groupEntries.length >= 2) {
       const mid = Math.ceil(groupEntries.length / 2);
       const c1Keys = groupEntries.slice(0, mid).flatMap(([,gk]) => gk);
       const c2Keys = groupEntries.slice(mid).flatMap(([,gk]) => gk);
-      const c1Raw = groupEntries.slice(0, mid).flatMap(([,gk]) => makeMatchList(gk));
-      const c2Raw = groupEntries.slice(mid).flatMap(([,gk]) => makeMatchList(gk));
+      const c1Pairs = groupEntries.slice(0, mid).flatMap(([,gk]) => makeMatchPairs(gk));
+      const c2Pairs = groupEntries.slice(mid).flatMap(([,gk]) => makeMatchPairs(gk));
+
+      const maxSlots = Math.max(c1Pairs.length, c2Pairs.length);
+      const c1Matches = [], c2Matches = [];
+
+      for (let s = 0; s < maxSlots; s++) {
+        const m1 = c1Pairs[s] || null;
+        const m2 = c2Pairs[s] || null;
+        // 両コートの試合中チームをまとめてbusy扱い
+        const busy = new Set();
+        if (m1) { busy.add(m1.t1); busy.add(m1.t2); }
+        if (m2) { busy.add(m2.t1); busy.add(m2.t2); }
+        // 全チームから1人審判を選んで両コートに割り当て
+        const cands = keys.filter(k => !busy.has(k)).sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5);
+        const ref = cands[0] || null;
+        if (ref) refCount[ref]++;
+        if (m1) c1Matches.push({...m1, ref, slotIndex:s, displayNum:c1Matches.length+1});
+        if (m2) c2Matches.push({...m2, ref, slotIndex:s, displayNum:c2Matches.length+1});
+      }
+
       return {
-        court1: { teamKeys: c1Keys, matches: c1Raw.map((m,i)=>({...m,displayNum:i+1,slotIndex:i})) },
-        court2: { teamKeys: c2Keys, matches: c2Raw.map((m,i)=>({...m,displayNum:i+1,slotIndex:i})) }
+        court1: { teamKeys: c1Keys, matches: c1Matches },
+        court2: { teamKeys: c2Keys, matches: c2Matches }
       };
     }
 
-    // 1コート or グループが1つ: インターリーブ
-    const groupMatches = groupEntries.map(([,gk]) => makeMatchList(gk));
+    // 1コート or グループが1つ: インターリーブ後に全チームで審判割り当て
+    const groupPairs = groupEntries.map(([,gk]) => makeMatchPairs(gk));
     const merged = [];
-    const maxLen = Math.max(...groupMatches.map(g=>g.length));
+    const maxLen = Math.max(...groupPairs.map(g=>g.length));
     for (let i = 0; i < maxLen; i++) {
-      groupMatches.forEach(gm => { if (i < gm.length) merged.push(gm[i]); });
+      groupPairs.forEach(gp => { if (i < gp.length) merged.push(gp[i]); });
     }
-    return { court1: { teamKeys: keys, matches: merged.map((m,i)=>({...m,displayNum:i+1,slotIndex:i})) }, court2: null };
+    const c1Matches = merged.map((m, i) => {
+      const busy = new Set([m.t1, m.t2]);
+      const cands = keys.filter(k => !busy.has(k)).sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5);
+      const ref = cands[0] || null;
+      if (ref) refCount[ref]++;
+      return {...m, ref, slotIndex:i, displayNum:i+1};
+    });
+    return { court1: { teamKeys: keys, matches: c1Matches }, court2: null };
   }
 
   // splitLevel OFF: 既存ロジック（男女別・混合）
