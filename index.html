@@ -39,32 +39,23 @@ input:focus{border-color:#4f46e5}
 .btn-add{background:#3b82f6;color:white}
 .btn-kick{background:#fee2e2;color:#dc2626}
 .empty{text-align:center;color:#9ca3af;font-size:.85rem;padding:1.5rem 0}
-.match-row{
-  display:flex;
-  align-items:flex-start;
-  gap:.45rem;
-  padding:.55rem 0;
-  border-bottom:1px solid rgba(255,255,255,.15);
-  font-size:.82rem;
-  flex-wrap:nowrap;
-}
+.match-row{display:flex;align-items:flex-start;gap:.45rem;padding:.55rem 0;border-bottom:1px solid rgba(255,255,255,.15);font-size:.82rem;flex-wrap:nowrap}
 .match-row:last-child{border-bottom:none}
 .badge{font-size:.68rem;padding:.15rem .45rem;border-radius:9999px;font-weight:700;flex-shrink:0}
-
-/* タイマー用の追加スタイル */
-.timer-box { background: #1f2937; border-radius: 1rem; padding: 1.25rem; text-align: center; margin-bottom: 1rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,.3); transition: all 0.3s ease; }
-.timer-box.sticky { position: sticky; top: 1rem; z-index: 100; border: 2px solid #4f46e5; }
-.timer-time { font-size: 3.5rem; font-weight: 900; color: white; font-variant-numeric: tabular-nums; line-height: 1; margin: .5rem 0; letter-spacing: 2px;}
-.timer-ctrls { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
-.t-btn { flex:1; background: #374151; color: white; border: none; padding: .6rem; border-radius: .5rem; font-weight: 700; cursor: pointer; transition:.2s;}
-.t-btn:active { transform: scale(0.95); }
-.t-btn.primary { background: #10b981; }
-.t-btn.danger { background: #ef4444; }
-.t-btn.warning { background: #f59e0b; color: #fff;}
+.timer-box{background:#1f2937;border-radius:1rem;padding:1.25rem;text-align:center;margin-bottom:1rem;box-shadow:0 10px 25px -5px rgba(0,0,0,.3);transition:all 0.3s ease}
+.timer-box.sticky{position:sticky;top:1rem;z-index:100;border:2px solid #4f46e5}
+.timer-time{font-size:3.5rem;font-weight:900;color:white;font-variant-numeric:tabular-nums;line-height:1;margin:.5rem 0;letter-spacing:2px}
+.timer-ctrls{display:flex;gap:0.5rem;justify-content:center;margin-top:1rem}
+.t-btn{flex:1;background:#374151;color:white;border:none;padding:.6rem;border-radius:.5rem;font-weight:700;cursor:pointer;transition:.2s}
+.t-btn:active{transform:scale(0.95)}
+.t-btn.primary{background:#10b981}
+.t-btn.danger{background:#ef4444}
+.t-btn.warning{background:#f59e0b;color:#fff}
 </style>
 </head>
-<body style = "display:none">
+<body style="display:none">
 
+<!-- HOME -->
 <div id="s-home" style="display:none;min-height:100vh;background:linear-gradient(135deg,#3730a3,#7c3aed);align-items:center;justify-content:center;padding:1rem">
   <div style="background:white;border-radius:1.5rem;padding:2rem;width:100%;max-width:360px;box-shadow:0 20px 40px rgba(0,0,0,.3)">
     <div style="text-align:center;font-size:3rem;margin-bottom:.5rem">👥</div>
@@ -81,6 +72,14 @@ input:focus{border-color:#4f46e5}
       <button class="tgl on-blue" id="g-male" onclick="selectGender('male')">👦 男子</button>
       <button class="tgl" id="g-female" onclick="selectGender('female')">👧 女子</button>
     </div>
+    <!-- レベル選択（参加者タブのみ表示） -->
+    <div id="level-select" style="display:none">
+      <p style="font-size:.8rem;color:#6b7280;margin-bottom:.5rem;margin-top:.25rem">レベル</p>
+      <div class="tgl-grp">
+        <button class="tgl" id="l-enjoy" onclick="selectLevel('enjoy')">😊 エンジョイ</button>
+        <button class="tgl on" id="l-gachi" onclick="selectLevel('gachi')">🔥 ガチ</button>
+      </div>
+    </div>
     <div id="join-fields" style="display:none;margin-top:.25rem">
       <input id="h-code" type="text" placeholder="ルームコード（例: AB3X）" maxlength="4" style="text-transform:uppercase;text-align:center;letter-spacing:.3em;font-weight:800"/>
     </div>
@@ -88,6 +87,7 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
+<!-- WAITING -->
 <div id="s-waiting" style="display:none;min-height:100vh;background:linear-gradient(135deg,#fffbeb,#fef3c7);align-items:center;justify-content:center;padding:1rem">
   <div style="background:white;border-radius:1.5rem;padding:2.5rem 2rem;text-align:center;max-width:320px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.1)">
     <div class="spin"></div>
@@ -102,14 +102,13 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
+<!-- PARTICIPANT -->
 <div id="s-participant" style="display:none;min-height:100vh;background:#f3f4f6;padding:1rem">
   <div style="max-width:400px;margin:0 auto">
-    
     <div id="p-timer-sec" class="timer-box sticky" style="display:none;">
-      <div style="font-size:.8rem; color:#9ca3af; font-weight:700;">⏱ 試合タイマー</div>
+      <div style="font-size:.8rem;color:#9ca3af;font-weight:700;">⏱ 試合タイマー</div>
       <div id="p-timer-display" class="timer-time">05:00</div>
     </div>
-
     <div id="p-hero" style="display:none;border-radius:1.5rem;padding:2rem;text-align:center;margin-bottom:1rem">
       <p style="color:rgba(255,255,255,.8);font-size:.75rem;font-weight:600;margin-bottom:.25rem">あなたのチーム</p>
       <p id="p-num" style="font-size:7rem;font-weight:900;color:white;line-height:1"></p>
@@ -136,6 +135,7 @@ input:focus{border-color:#4f46e5}
   </div>
 </div>
 
+<!-- ADMIN -->
 <div id="s-admin" style="display:none;min-height:100vh;background:#f3f4f6;padding-bottom:2rem">
   <div style="background:#4338ca;color:white;padding:1.25rem 1rem 1.5rem">
     <div style="max-width:500px;margin:0 auto">
@@ -150,8 +150,9 @@ input:focus{border-color:#4f46e5}
   </div>
   <div style="max-width:500px;margin:0 auto;padding:1rem">
 
+    <!-- タイマー -->
     <div id="a-timer-sec" class="timer-box" style="display:none;">
-      <div style="font-size:.8rem; color:#9ca3af; font-weight:700;">⏱ 共有タイマー（全員と同期中）</div>
+      <div style="font-size:.8rem;color:#9ca3af;font-weight:700;">⏱ 共有タイマー（全員と同期中）</div>
       <div id="a-timer-display" class="timer-time">05:00</div>
       <div class="timer-ctrls">
         <button class="t-btn" onclick="setTimer(3)">3分</button>
@@ -164,13 +165,13 @@ input:focus{border-color:#4f46e5}
         <button class="t-btn warning" onclick="resetTimer()">🔄 リセット</button>
       </div>
       <div class="timer-ctrls" style="margin-top:.5rem">
-  <input id="custom-timer-input" type="number" min="1" max="99"
-    placeholder="分"
-    style="width:70px;padding:.5rem;border-radius:.5rem;border:1px solid #4b5563;background:#374151;color:white;font-size:1rem;font-weight:700;text-align:center;margin-bottom:0"/>
-  <button class="t-btn" onclick="setCustomTimer()" style="flex:1">⏱ カスタム</button>
+        <input id="custom-timer-input" type="number" min="1" max="99" placeholder="分"
+          style="width:70px;padding:.5rem;border-radius:.5rem;border:1px solid #4b5563;background:#374151;color:white;font-size:1rem;font-weight:700;text-align:center;margin-bottom:0"/>
+        <button class="t-btn" onclick="setCustomTimer()" style="flex:1">⏱ カスタム</button>
       </div>
     </div>
 
+    <!-- 申請 -->
     <div id="a-req-sec" class="card" style="display:none">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></div>
@@ -180,23 +181,22 @@ input:focus{border-color:#4f46e5}
       <div id="a-req-list"></div>
     </div>
 
+    <!-- 設定 -->
     <div id="a-setup-sec" class="card">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#4f46e5"></div>チーム設定
       </div>
-      
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem">試合モード</p>
       <div class="tgl-grp" style="margin-bottom:1rem">
         <button class="tgl on" id="mode-mixed" onclick="setGameMode('mixed')">🔀 混合</button>
         <button class="tgl" id="mode-sep" onclick="setGameMode('separate')">⚥ 男女別</button>
+        <button class="tgl" id="mode-level" onclick="setGameMode('level')">🔥 ガチ/エンジョイ別</button>
       </div>
-
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem">使用コート数</p>
       <div class="tgl-grp" style="margin-bottom:1rem">
         <button class="tgl" id="court-1" onclick="setCourtNum(1)">1コート（全体）</button>
         <button class="tgl on" id="court-2" onclick="setCourtNum(2)">2コート</button>
       </div>
-
       <div style="display:flex;border-radius:.75rem;overflow:hidden;border:1px solid #e5e7eb;margin-bottom:1rem">
         <button id="dc-btn" onclick="setDivMode('count')" style="flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:#4f46e5;color:white">👤 人数で分ける</button>
         <button id="dt-btn" onclick="setDivMode('team')" style="flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:white;color:#6b7280">🏷 チーム数で分ける</button>
@@ -206,58 +206,38 @@ input:focus{border-color:#4f46e5}
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;background:#f8faff;border-radius:.75rem;padding:.75rem 1rem">
         <span style="font-size:.85rem;color:#374151;font-weight:600;flex:1">管理者もチームに参加する</span>
         <div onclick="toggleAdminJoin()" id="toggle-bg" style="position:relative;width:44px;height:24px;background:#4f46e5;border-radius:24px;cursor:pointer;transition:.3s">
-        <div id="toggle-knob" style="position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:23px;transition:.3s"></div> 
-      </div>
-
+          <div id="toggle-knob" style="position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:23px;transition:.3s"></div>
         </div>
+      </div>
       <div id="a-preview" style="background:#eef2ff;border-radius:.75rem;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#4338ca;font-weight:600"></div>
       <button id="a-shuffle" onclick="doShuffle()" disabled style="width:100%;background:#4f46e5;color:white;border:none;padding:.9rem;border-radius:.75rem;font-size:.9rem;font-weight:700;cursor:pointer;opacity:.4">🔀 ランダムでチーム分けする</button>
     </div>
 
+    <!-- 承認済み -->
     <div class="card">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#10b981"></div>
         <span id="a-approved-title">承認済み参加者</span>
       </div>
+      <!-- スマホなし参加者追加 -->
       <div class="card">
-  <div style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:1rem">
-    ➕ スマホなし参加者を追加
-  </div>
-
-  <input
-    id="manual-name"
-    type="text"
-    placeholder="名前"
-  />
-
-  <div class="tgl-grp">
-    <button
-      class="tgl on-blue"
-      id="manual-male"
-      onclick="setManualGender('male')"
-    >
-      👦 男子
-    </button>
-
-    <button
-      class="tgl"
-      id="manual-female"
-      onclick="setManualGender('female')"
-    >
-      👧 女子
-    </button>
-  </div>
-
-  <button
-    class="btn btn-green"
-    onclick="addManualPlayer()"
-  >
-    参加者を追加
-  </button>
-</div>
+        <div style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:1rem">➕ スマホなし参加者を追加</div>
+        <input id="manual-name" type="text" placeholder="名前"/>
+        <div class="tgl-grp">
+          <button class="tgl on-blue" id="manual-male" onclick="setManualGender('male')">👦 男子</button>
+          <button class="tgl" id="manual-female" onclick="setManualGender('female')">👧 女子</button>
+        </div>
+        <p style="font-size:.8rem;color:#6b7280;margin-bottom:.5rem">レベル</p>
+        <div class="tgl-grp">
+          <button class="tgl" id="manual-enjoy" onclick="setManualLevel('enjoy')">😊 エンジョイ</button>
+          <button class="tgl on" id="manual-gachi" onclick="setManualLevel('gachi')">🔥 ガチ</button>
+        </div>
+        <button class="btn btn-green" onclick="addManualPlayer()">参加者を追加</button>
+      </div>
       <div id="a-approved-list"><div class="empty">まだ参加者がいません</div></div>
     </div>
 
+    <!-- チーム結果 -->
     <div id="a-teams-sec" class="card" style="display:none">
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#8b5cf6"></div>チーム結果
@@ -265,6 +245,7 @@ input:focus{border-color:#4f46e5}
       <div id="a-teams-list"></div>
     </div>
 
+    <!-- スケジュール -->
     <div id="a-sched-sec" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
         <h3 style="font-size:.9rem;font-weight:800;color:#374151">📋 試合スケジュール</h3>
@@ -277,9 +258,8 @@ input:focus{border-color:#4f46e5}
 </div>
 
 <script>
-
-const ALLOWED_IP_PREFIX = "133.78."; // 第一・第二オクテットを入力
-
+// ===== IP チェック =====
+const ALLOWED_IP_PREFIX = "133.78.";
 async function checkCampusNetwork() {
   try {
     const res = await fetch('https://api.ipify.org?format=json');
@@ -302,53 +282,16 @@ async function checkCampusNetwork() {
     } else {
       document.body.style.display = "block";
     }
-  } catch (error) {
-    // APIが落ちていた場合はとりあえず通す
+  } catch (e) {
     document.body.style.display = "block";
   }
 }
 checkCampusNetwork();
 
-const ADMIN_PASSWORD = "donut"; // 好きなパスワードに変更してください
-
-function accessAdmin() {
-    const input = prompt("管理者パスワードを入力してください");
-    if(input === ADMIN_PASSWORD) {
-        show("s-admin");
-    } else {
-        alert("パスワードが違います！");
-    }
-}
-
-  let manualGender = "male";
-
-function setManualGender(g){
-  manualGender = g;
-  document.getElementById("manual-male").className = "tgl" + (g === "male" ? " on-blue on" : "");
-  document.getElementById("manual-female").className = "tgl" + (g === "female" ? " on-pink on" : "");
-}
-
-async function addManualPlayer(){
-  const name = document.getElementById("manual-name").value.trim();
-  if(!name){
-    alert("名前を入力してください");
-    return;
-  }
-  const id = "manual_" + genId();
-  await dbSet(`rooms/${roomCode}/participants/${id}`, {
-      id,
-      name,
-      gender: manualGender,
-      status: "approved",
-      manual: true,
-      joinedAt: Date.now()
-    }
-  );
-  document.getElementById("manual-name").value = "";
-}
-
-const DB="https://divide-team-default-rtdb.firebaseio.com";
-const COLORS=[
+// ===== 定数・設定 =====
+const ADMIN_PASSWORD = "donut";
+const DB = "https://divide-team-default-rtdb.firebaseio.com";
+const COLORS = [
   {bg:"#3b82f6",light:"#eff6ff",border:"#bfdbfe",text:"#1d4ed8"},
   {bg:"#ef4444",light:"#fef2f2",border:"#fecaca",text:"#b91c1c"},
   {bg:"#10b981",light:"#ecfdf5",border:"#a7f3d0",text:"#065f46"},
@@ -360,263 +303,281 @@ const COLORS=[
   {bg:"#14b8a6",light:"#f0fdfa",border:"#99f6e4",text:"#0f766e"},
   {bg:"#06b6d4",light:"#ecfeff",border:"#a5f3fc",text:"#0e7490"},
 ];
-const genCode=()=>Math.random().toString(36).substring(2,6).toUpperCase();
-const genId=()=>Math.random().toString(36).substring(2,10);
-const tNum=k=>parseInt(k.replace('team',''))+1;
-const tCol=k=>COLORS[parseInt(k.replace('team',''))%COLORS.length];
+const genCode = () => Math.random().toString(36).substring(2,6).toUpperCase();
+const genId = () => Math.random().toString(36).substring(2,10);
+const tNum = k => parseInt(k.replace('team','')) + 1;
+const tCol = k => COLORS[parseInt(k.replace('team','')) % COLORS.length];
+const levelLabel = l => l === 'gachi' ? '🔥ガチ' : l === 'enjoy' ? '😊エンジョイ' : '';
 
-let myId=localStorage.getItem("myId")||genId();
-localStorage.setItem("myId",myId);
-let roomCode=localStorage.getItem("roomCode")||"";
-let myName=localStorage.getItem("myName")||"";
-let myGender=localStorage.getItem("myGender")||"male";
-let isAdminSession=localStorage.getItem("isAdmin")==="true";
-let pollTimer=null,currentTab="create";
-
-// 設定変数とタイマー変数
-let adminJoin=true, divMode="count", gameMode="mixed", courtNum=2;
+// ===== 状態変数 =====
+let myId = localStorage.getItem("myId") || genId();
+localStorage.setItem("myId", myId);
+let roomCode = localStorage.getItem("roomCode") || "";
+let myName = localStorage.getItem("myName") || "";
+let myGender = localStorage.getItem("myGender") || "male";
+let myLevel = localStorage.getItem("myLevel") || "gachi";
+let isAdminSession = localStorage.getItem("isAdmin") === "true";
+let pollTimer = null, currentTab = "create";
+let adminJoin = true, divMode = "count", gameMode = "mixed", courtNum = 2;
 let timerState = { endTime: null, duration: 300000, baseDuration: 300000, isRunning: false };
 setInterval(updateTimerUI, 100);
 
-async function dbGet(p){const r=await fetch(`${DB}/${p}.json`);return r.json();}
-async function dbSet(p,d){await fetch(`${DB}/${p}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});}
+// スマホなし追加用
+let manualGender = "male";
+let manualLevel = "gachi";
 
-function show(id){
-  ["s-home","s-waiting","s-participant","s-admin"].forEach(s=>document.getElementById(s).style.display="none");
-  document.getElementById(id).style.display=(id==="s-home"||id==="s-waiting")?"flex":"block";
+// ===== DB操作 =====
+async function dbGet(p) { const r = await fetch(`${DB}/${p}.json`); return r.json(); }
+async function dbSet(p, d) { await fetch(`${DB}/${p}.json`, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(d)}); }
+
+// ===== 画面制御 =====
+function show(id) {
+  ["s-home","s-waiting","s-participant","s-admin"].forEach(s => document.getElementById(s).style.display = "none");
+  document.getElementById(id).style.display = (id === "s-home" || id === "s-waiting") ? "flex" : "block";
 }
 
-function switchTab(btn){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+function switchTab(btn) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("on"));
   btn.classList.add("on");
-  currentTab=btn.dataset.tab;
-  document.getElementById("join-fields").style.display=currentTab==="join"?"block":"none";
-  document.getElementById("h-btn").textContent=currentTab==="create"?"ルームを作成する":"入室申請する";
-  document.getElementById("h-btn").className="btn "+(currentTab==="create"?"btn-indigo":"btn-green");
-  document.getElementById("h-err").style.display="none";
+  currentTab = btn.dataset.tab;
+  const isJoin = currentTab === "join";
+  document.getElementById("join-fields").style.display = isJoin ? "block" : "none";
+  document.getElementById("level-select").style.display = isJoin ? "block" : "none";
+  document.getElementById("h-btn").textContent = isJoin ? "入室申請する" : "ルームを作成する";
+  document.getElementById("h-btn").className = "btn " + (isJoin ? "btn-green" : "btn-indigo");
+  document.getElementById("h-err").style.display = "none";
 }
 
-function selectGender(g){
-  myGender=g;
-  localStorage.setItem("myGender",g);
-  document.getElementById("g-male").className="tgl"+(g==="male"?" on-blue on":"");
-  document.getElementById("g-female").className="tgl"+(g==="female"?" on-pink on":"");
+function selectGender(g) {
+  myGender = g;
+  localStorage.setItem("myGender", g);
+  document.getElementById("g-male").className = "tgl" + (g==="male" ? " on-blue on" : "");
+  document.getElementById("g-female").className = "tgl" + (g==="female" ? " on-pink on" : "");
 }
 selectGender(myGender);
 
-function showErr(msg){const e=document.getElementById("h-err");e.textContent=msg;e.style.display=msg?"block":"none";}
+function selectLevel(l) {
+  myLevel = l;
+  localStorage.setItem("myLevel", l);
+  document.getElementById("l-enjoy").className = "tgl" + (l==="enjoy" ? " on" : "");
+  document.getElementById("l-gachi").className = "tgl" + (l==="gachi" ? " on" : "");
+}
+selectLevel(myLevel);
 
-async function homeAction(){
-  const name=document.getElementById("h-name").value.trim();
+function setManualGender(g) {
+  manualGender = g;
+  document.getElementById("manual-male").className = "tgl" + (g==="male" ? " on-blue on" : "");
+  document.getElementById("manual-female").className = "tgl" + (g==="female" ? " on-pink on" : "");
+}
+
+function setManualLevel(l) {
+  manualLevel = l;
+  document.getElementById("manual-enjoy").className = "tgl" + (l==="enjoy" ? " on" : "");
+  document.getElementById("manual-gachi").className = "tgl" + (l==="gachi" ? " on" : "");
+}
+
+function showErr(msg) { const e = document.getElementById("h-err"); e.textContent = msg; e.style.display = msg ? "block" : "none"; }
+
+// ===== スマホなし参加者追加 =====
+async function addManualPlayer() {
+  const name = document.getElementById("manual-name").value.trim();
+  if (!name) { alert("名前を入力してください"); return; }
+  const id = "manual_" + genId();
+  await dbSet(`rooms/${roomCode}/participants/${id}`, {
+    id, name, gender: manualGender, level: manualLevel,
+    status: "approved", manual: true, joinedAt: Date.now()
+  });
+  document.getElementById("manual-name").value = "";
+}
+
+// ===== ホームアクション =====
+async function homeAction() {
+  const name = document.getElementById("h-name").value.trim();
   showErr("");
-  if(!name)return showErr("名前を入力してください");
-  myName=name;localStorage.setItem("myName",name);
-  if(currentTab==="create"){
-    const pw=prompt("管理者パスワードを入力してください");
-    if(pw!==ADMIN_PASSWORD)return showErr("パスワードが違います");
-    const code=genCode();
-    await dbSet(`rooms/${code}`,{
-      adminId:myId, adminName:name, teamSize:5, 
-      gameMode:"mixed", courtNum:2, divMode:"count", adminJoin:true,
-      participants:{}, teams:{}, gameStarted:false,
+  if (!name) return showErr("名前を入力してください");
+  myName = name;
+  localStorage.setItem("myName", name);
+  if (currentTab === "create") {
+    const pw = prompt("管理者パスワードを入力してください");
+    if (pw !== ADMIN_PASSWORD) return showErr("パスワードが違います");
+    const code = genCode();
+    await dbSet(`rooms/${code}`, {
+      adminId: myId, adminName: name, teamSize: 5,
+      gameMode: "mixed", courtNum: 2, divMode: "count", adminJoin: true,
+      participants: {}, teams: {}, gameStarted: false,
       timer: { endTime: null, duration: 300000, baseDuration: 300000, isRunning: false }
     });
-    roomCode=code;
-    localStorage.setItem("roomCode",code);localStorage.setItem("isAdmin","true");
-    isAdminSession=true;startAdminPoll();show("s-admin");
+    roomCode = code;
+    localStorage.setItem("roomCode", code);
+    localStorage.setItem("isAdmin", "true");
+    isAdminSession = true;
+    startAdminPoll();
+    show("s-admin");
   } else {
-    const code=document.getElementById("h-code").value.trim().toUpperCase();
-    if(code.length!==4)return showErr("ルームコードは4文字です");
-    const room=await dbGet(`rooms/${code}`);
-    if(!room)return showErr("ルームが見つかりません");
-    await dbSet(`rooms/${code}/participants/${myId}`,{id:myId,name,status:"waiting",gender:myGender,joinedAt:Date.now()});
-    roomCode=code;
-    localStorage.setItem("roomCode",code);localStorage.setItem("isAdmin","false");
-    isAdminSession=false;
-    document.getElementById("w-code").textContent=code;
-    document.getElementById("w-name").textContent=name;
-    show("s-waiting");startWaitingPoll();
+    const code = document.getElementById("h-code").value.trim().toUpperCase();
+    if (code.length !== 4) return showErr("ルームコードは4文字です");
+    const room = await dbGet(`rooms/${code}`);
+    if (!room) return showErr("ルームが見つかりません");
+    await dbSet(`rooms/${code}/participants/${myId}`, {
+      id: myId, name, status: "waiting",
+      gender: myGender, level: myLevel, joinedAt: Date.now()
+    });
+    roomCode = code;
+    localStorage.setItem("roomCode", code);
+    localStorage.setItem("isAdmin", "false");
+    isAdminSession = false;
+    document.getElementById("w-code").textContent = code;
+    document.getElementById("w-name").textContent = name;
+    show("s-waiting");
+    startWaitingPoll();
   }
 }
 
-function startPoll(fn){stopPoll();fn();pollTimer=setInterval(fn,1500);}
-function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+// ===== ポーリング =====
+function startPoll(fn) { stopPoll(); fn(); pollTimer = setInterval(fn, 1500); }
+function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
-function startWaitingPoll(){
-  startPoll(async()=>{
-    const me=await dbGet(`rooms/${roomCode}/participants/${myId}`);
-    if(!me)return;
-    if(me.status==="approved"){stopPoll();const room=await dbGet(`rooms/${roomCode}`);renderParticipant(room);show("s-participant");startParticipantPoll();}
-    if(me.status==="kicked"){stopPoll();clearLocal();show("s-home");showErr("管理者により退出させられました");}
+function startWaitingPoll() {
+  startPoll(async () => {
+    const me = await dbGet(`rooms/${roomCode}/participants/${myId}`);
+    if (!me) return;
+    if (me.status === "approved") { stopPoll(); const room = await dbGet(`rooms/${roomCode}`); renderParticipant(room); show("s-participant"); startParticipantPoll(); }
+    if (me.status === "kicked") { stopPoll(); clearLocal(); show("s-home"); showErr("管理者により退出させられました"); }
   });
 }
 
-function renderParticipant(room){
-  const teams=room.teams||{};
-  const teamKeys=Object.keys(teams);
-  const myKey=teamKeys.find(k=>teams[k].members&&Object.values(teams[k].members).some(m=>m.id===myId));
+// ===== 参加者画面描画 =====
+function renderParticipant(room) {
+  const teams = room.teams || {};
+  const teamKeys = Object.keys(teams);
+  const myKey = teamKeys.find(k => teams[k].members && Object.values(teams[k].members).some(m => m.id === myId));
 
-  if(myKey&&room.gameStarted){
-    const myTeam=teams[myKey];
-    const c=tCol(myKey);
-    const hero=document.getElementById("p-hero");
-    hero.style.display="block";hero.style.background=c.bg;
-    document.getElementById("p-num").textContent=tNum(myKey);
-    document.getElementById("p-label").textContent=`チーム ${tNum(myKey)}`;
-    document.getElementById("p-wait").style.display="none";
+  if (myKey && room.gameStarted) {
+    const myTeam = teams[myKey];
+    const c = tCol(myKey);
+    const hero = document.getElementById("p-hero");
+    hero.style.display = "block";
+    hero.style.background = c.bg;
+    document.getElementById("p-num").textContent = tNum(myKey);
+    document.getElementById("p-label").textContent = `チーム ${tNum(myKey)}`;
+    document.getElementById("p-wait").style.display = "none";
 
     let myMatches = [];
-    const currentCourtNum = room.courtNum || 2;
-    if(room.schedule){
-      if(room.schedule.court1?.matches){
-        room.schedule.court1.matches.forEach(m => myMatches.push({...m, courtName: currentCourtNum===1?'コート':'ステージ側'}));
-      }
-      if(room.schedule.court2?.matches){
-        room.schedule.court2.matches.forEach(m => myMatches.push({...m, courtName: '出入口側'}));
-      }
+    const cNum = room.courtNum || 2;
+    if (room.schedule) {
+      (room.schedule.court1?.matches || []).forEach(m => myMatches.push({...m, courtName: cNum===1 ? 'コート' : 'ステージ側'}));
+      (room.schedule.court2?.matches || []).forEach(m => myMatches.push({...m, courtName: '出入口側'}));
     }
-    
     myMatches = myMatches.filter(m => m.t1 === myKey || m.t2 === myKey || m.ref === myKey);
-    myMatches.sort((a,b) => a.slotIndex - b.slotIndex);
+    myMatches.sort((a, b) => a.slotIndex - b.slotIndex);
 
     document.getElementById("p-court").textContent = myMatches.length > 0 ? `📍 全 ${myMatches.length} 試合（スケジュールを確認）` : "";
-    
-    const mems=Object.values(myTeam.members||{});
-    document.getElementById("p-member-title").textContent=`あなたのチームメンバー（${mems.length}人）`;
-    document.getElementById("p-members").innerHTML=mems.map(m=>`
+
+    const mems = Object.values(myTeam.members || {});
+    document.getElementById("p-member-title").textContent = `あなたのチームメンバー（${mems.length}人）`;
+    document.getElementById("p-members").innerHTML = mems.map(m => `
       <div class="row">
         <div class="av" style="background:${c.bg}">${m.name[0]}</div>
         <span style="flex:1;font-size:.9rem;color:#1f2937">${m.name}</span>
         <span style="font-size:.75rem">${m.gender==='male'?'👦':'👧'}</span>
-        ${m.id===myId?'<span style="font-size:.7rem;background:#d1fae5;color:#065f46;padding:.2rem .5rem;border-radius:9999px">あなた</span>':""}
+        <span style="font-size:.72rem;color:${m.level==='gachi'?'#ef4444':'#10b981'}">${levelLabel(m.level)}</span>
+        ${m.id===myId ? '<span style="font-size:.7rem;background:#d1fae5;color:#065f46;padding:.2rem .5rem;border-radius:9999px">あなた</span>' : ""}
       </div>`).join("");
-    document.getElementById("p-members-card").style.display="block";
+    document.getElementById("p-members-card").style.display = "block";
 
-    if(myMatches.length > 0){
+    if (myMatches.length > 0) {
       document.getElementById("p-schedule").innerHTML = renderMatches(myMatches, myKey);
-      document.getElementById("p-schedule-card").style.display="block";
+      document.getElementById("p-schedule-card").style.display = "block";
     } else {
-      document.getElementById("p-schedule-card").style.display="none";
+      document.getElementById("p-schedule-card").style.display = "none";
     }
 
-    document.getElementById("p-all").innerHTML=teamKeys.map(k=>{
-      const t=teams[k];const col=tCol(k);const ms=Object.values(t.members||{});
+    document.getElementById("p-all").innerHTML = teamKeys.map(k => {
+      const t = teams[k]; const col = tCol(k); const ms = Object.values(t.members || {});
+      const tag = t.level === 'gachi' ? '<span style="font-size:.7rem;color:#ef4444">🔥ガチ</span>'
+                : t.level === 'enjoy' ? '<span style="font-size:.7rem;color:#10b981">😊エンジョイ</span>'
+                : t.gender === 'male' ? '<span style="font-size:.7rem;color:#3b82f6">👦男子</span>'
+                : t.gender === 'female' ? '<span style="font-size:.7rem;color:#ec4899">👧女子</span>' : '';
       return `<div style="margin-bottom:.75rem">
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
           <span style="background:${col.bg};color:white;font-size:.75rem;font-weight:700;padding:.2rem .75rem;border-radius:9999px">チーム ${tNum(k)}</span>
           <span style="font-size:.75rem;color:${col.text};font-weight:600">${ms.length}人</span>
-          ${t.gender==='male'?'<span style="font-size:.7rem;color:#3b82f6">👦男子</span>':t.gender==='female'?'<span style="font-size:.7rem;color:#ec4899">👧女子</span>':''}
+          ${tag}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:.4rem;padding-left:.5rem">
-          ${ms.map(m=>`<span style="background:${col.light};color:${col.text};font-size:.75rem;padding:.2rem .6rem;border-radius:9999px">${m.name}${m.id===myId?" 👈":""}</span>`).join("")}
+          ${ms.map(m => `<span style="background:${col.light};color:${col.text};font-size:.75rem;padding:.2rem .6rem;border-radius:9999px">${m.name}${m.id===myId?" 👈":""}</span>`).join("")}
         </div>
       </div>`;
     }).join("");
-    document.getElementById("p-all-card").style.display="block";
+    document.getElementById("p-all-card").style.display = "block";
   }
-  
   syncTimerFromDB(room);
 }
 
-function renderMatches(matches,highlightKey=null){
-  return matches.map(m=>{
-    const c1=tCol(m.t1),c2=tCol(m.t2);
-    const isPlay=highlightKey&&(m.t1===highlightKey||m.t2===highlightKey);
-    const isRef=highlightKey&&m.ref===highlightKey;
-    const courtCol = m.courtName === 'コート1' || m.courtName === 'コート' ? '#4f46e5' : '#0891b2';
-    
-    return `<div class="match-row" style="display:block; ${isPlay?'background:#fffbeb;border-radius:.5rem;padding:.4rem .5rem;':isRef?'background:#f0fdf4;border-radius:.5rem;padding:.4rem .5rem;':''}">
-      <div style="display:flex; align-items:center; gap:.45rem;">
-        <div style="min-width:58px; height:22px; border-radius:999px; background:#e5e7eb; display:flex; align-items:center; justify-content:center; font-size:.65rem; font-weight:800; color:#374151; flex-shrink:0; padding:0 .45rem;">
-          第${m.displayNum || m.num}試合
-        </div>
-        ${!isRef && m.courtName ? `
-          <div style="font-size:.65rem; font-weight:800; color:white; background:${courtCol}; padding:.15rem .4rem; border-radius:.25rem; flex-shrink:0">
-            ${m.courtName}
-          </div>
-        ` : ''}
-        <div style="flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+// ===== 試合表示 =====
+function renderMatches(matches, highlightKey = null) {
+  return matches.map(m => {
+    const c1 = tCol(m.t1), c2 = tCol(m.t2);
+    const isPlay = highlightKey && (m.t1 === highlightKey || m.t2 === highlightKey);
+    const isRef = highlightKey && m.ref === highlightKey;
+    const courtCol = (m.courtName === 'ステージ側' || m.courtName === 'コート') ? '#4338ca' : '#0891b2';
+    return `<div class="match-row" style="display:block;${isPlay?'background:#fffbeb;border-radius:.5rem;padding:.4rem .5rem;':isRef?'background:#f0fdf4;border-radius:.5rem;padding:.4rem .5rem;':''}">
+      <div style="display:flex;align-items:center;gap:.45rem;">
+        <div style="min-width:58px;height:22px;border-radius:999px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;color:#374151;flex-shrink:0;padding:0 .45rem;">第${m.displayNum||m.num}試合</div>
+        ${!isRef && m.courtName ? `<div style="font-size:.65rem;font-weight:800;color:white;background:${courtCol};padding:.15rem .4rem;border-radius:.25rem;flex-shrink:0">${m.courtName}</div>` : ''}
+        <div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
           <span style="font-weight:700;color:${c1.bg}">チーム${tNum(m.t1)}</span>
           <span style="color:#9ca3af;margin:0 .25rem">vs</span>
           <span style="font-weight:700;color:${c2.bg}">チーム${tNum(m.t2)}</span>
-          ${isPlay?'<span class="badge" style="background:#fef9c3;color:#854d0e;margin-left:.3rem">試合</span>':''}
-          ${isRef?'<span class="badge" style="background:#d1fae5;color:#065f46;margin-left:.3rem">審判</span>':''}
+          ${isPlay ? '<span class="badge" style="background:#fef9c3;color:#854d0e;margin-left:.3rem">試合</span>' : ''}
+          ${isRef ? '<span class="badge" style="background:#d1fae5;color:#065f46;margin-left:.3rem">審判</span>' : ''}
         </div>
       </div>
-      <div style="text-align:right; margin-top:.3rem;">
-        ${m.ref
-          ? `<span style="font-size:.72rem;color:inherit;opacity:0.8;">🚩 審判 : チーム${tNum(m.ref)}</span>`
-          : `<span style="font-size:.72rem;color:inherit;opacity:0.5;">審判なし</span>`
-        }
+      <div style="text-align:right;margin-top:.3rem;">
+        ${m.ref ? `<span style="font-size:.72rem;color:inherit;opacity:0.8;">🚩 審判 : チーム${tNum(m.ref)}</span>` : `<span style="font-size:.72rem;color:inherit;opacity:0.5;">審判なし</span>`}
       </div>
     </div>`;
   }).join("");
 }
 
-function startParticipantPoll(){
-  startPoll(async()=>{
-    const me=await dbGet(`rooms/${roomCode}/participants/${myId}`);
-    if(!me||me.status==="kicked"){stopPoll();clearLocal();show("s-home");showErr("管理者により退出させられました");return;}
-    const room=await dbGet(`rooms/${roomCode}`);
-    if(room)renderParticipant(room);
+function startParticipantPoll() {
+  startPoll(async () => {
+    const me = await dbGet(`rooms/${roomCode}/participants/${myId}`);
+    if (!me || me.status === "kicked") { stopPoll(); clearLocal(); show("s-home"); showErr("管理者により退出させられました"); return; }
+    const room = await dbGet(`rooms/${roomCode}`);
+    if (room) renderParticipant(room);
   });
 }
 
-// ---------------------------
-// 新機能：タイマー関連の処理
-// ---------------------------
+// ===== タイマー =====
 function syncTimerFromDB(room) {
-  if(room.timer) {
-    timerState = room.timer;
-  }
-  
+  if (room.timer) timerState = room.timer;
   const showTimer = !!room.gameStarted;
   const pts = document.getElementById("p-timer-sec");
   const ats = document.getElementById("a-timer-sec");
-  if(pts) pts.style.display = showTimer ? "block" : "none";
-  if(ats) ats.style.display = showTimer ? "block" : "none";
-
+  if (pts) pts.style.display = showTimer ? "block" : "none";
+  if (ats) ats.style.display = showTimer ? "block" : "none";
   const btn = document.getElementById("btn-timer-start");
-  if(btn) {
-    if(timerState.isRunning) {
-      btn.innerHTML = "⏸ 一時停止";
-      btn.className = "t-btn danger";
-    } else {
-      btn.innerHTML = "▶ スタート";
-      btn.className = "t-btn primary";
-    }
-  }
+  if (btn) { btn.innerHTML = timerState.isRunning ? "⏸ 一時停止" : "▶ スタート"; btn.className = "t-btn " + (timerState.isRunning ? "danger" : "primary"); }
   updateTimerUI();
 }
 
 function updateTimerUI() {
-  let left = 0;
-  if(timerState.isRunning && timerState.endTime) {
-    left = Math.max(0, timerState.endTime - Date.now());
-  } else {
-    left = timerState.duration || 0;
-  }
-
-  const m = Math.floor(left / 60000).toString().padStart(2, '0');
-  const s = Math.floor((left % 60000) / 1000).toString().padStart(2, '0');
+  let left = timerState.isRunning && timerState.endTime ? Math.max(0, timerState.endTime - Date.now()) : (timerState.duration || 0);
+  const m = Math.floor(left/60000).toString().padStart(2,'0');
+  const s = Math.floor((left%60000)/1000).toString().padStart(2,'0');
   const str = `${m}:${s}`;
-  
-  const pDisp = document.getElementById("p-timer-display");
-  const aDisp = document.getElementById("a-timer-display");
-  if(pDisp) pDisp.textContent = str;
-  if(aDisp) aDisp.textContent = str;
-
-  // 0秒になったら赤くする演出
-  const color = (left === 0 && timerState.isRunning) ? "#ef4444" : "white";
-  if(pDisp) pDisp.style.color = color;
-  if(aDisp) aDisp.style.color = color;
+  const pD = document.getElementById("p-timer-display");
+  const aD = document.getElementById("a-timer-display");
+  if (pD) { pD.textContent = str; pD.style.color = (left===0&&timerState.isRunning) ? "#ef4444" : "white"; }
+  if (aD) { aD.textContent = str; aD.style.color = (left===0&&timerState.isRunning) ? "#ef4444" : "white"; }
 }
 
 async function setTimer(mins) {
-  const d = mins * 60 * 1000;
-  const newState = { endTime: null, duration: d, baseDuration: d, isRunning: false };
-  timerState = newState; updateTimerUI();
-  if(roomCode) await dbSet(`rooms/${roomCode}/timer`, newState);
+  const d = mins * 60000;
+  const ns = { endTime: null, duration: d, baseDuration: d, isRunning: false };
+  timerState = ns; updateTimerUI();
+  if (roomCode) await dbSet(`rooms/${roomCode}/timer`, ns);
 }
 async function setCustomTimer() {
   const val = parseInt(document.getElementById("custom-timer-input").value);
@@ -625,292 +586,356 @@ async function setCustomTimer() {
   document.getElementById("custom-timer-input").value = "";
 }
 async function toggleTimer() {
-  let newState = {};
-  if (timerState.isRunning) {
-    const left = Math.max(0, timerState.endTime - Date.now());
-    newState = { endTime: null, duration: left, baseDuration: timerState.baseDuration || 300000, isRunning: false };
-  } else {
-    const d = timerState.duration || 300000;
-    if(d === 0) return; // 0秒ならスタートしない
-    newState = { endTime: Date.now() + d, duration: d, baseDuration: timerState.baseDuration || 300000, isRunning: true };
-  }
-  timerState = newState; updateTimerUI();
-  syncTimerFromDB({timer: newState, gameStarted: true}); // 先行してUIを更新
-  if(roomCode) await dbSet(`rooms/${roomCode}/timer`, newState);
+  let ns = timerState.isRunning
+    ? { endTime: null, duration: Math.max(0, timerState.endTime - Date.now()), baseDuration: timerState.baseDuration||300000, isRunning: false }
+    : { endTime: Date.now() + (timerState.duration||300000), duration: timerState.duration||300000, baseDuration: timerState.baseDuration||300000, isRunning: true };
+  if (!timerState.isRunning && (timerState.duration||0) === 0) return;
+  timerState = ns; updateTimerUI();
+  syncTimerFromDB({ timer: ns, gameStarted: true });
+  if (roomCode) await dbSet(`rooms/${roomCode}/timer`, ns);
 }
-
 async function resetTimer() {
   const d = timerState.baseDuration || 300000;
-  const newState = { endTime: null, duration: d, baseDuration: d, isRunning: false };
-  timerState = newState; updateTimerUI();
-  syncTimerFromDB({timer: newState, gameStarted: true});
-  if(roomCode) await dbSet(`rooms/${roomCode}/timer`, newState);
+  const ns = { endTime: null, duration: d, baseDuration: d, isRunning: false };
+  timerState = ns; updateTimerUI();
+  syncTimerFromDB({ timer: ns, gameStarted: true });
+  if (roomCode) await dbSet(`rooms/${roomCode}/timer`, ns);
 }
 
-// ---------------------------
-// 既存の設定変更処理
-// ---------------------------
-async function setGameMode(mode){
-  gameMode=mode;
-  if(roomCode) await dbSet(`rooms/${roomCode}/gameMode`, mode);
-  document.getElementById("mode-mixed").className="tgl"+(mode==="mixed"?" on":"");
-  document.getElementById("mode-sep").className="tgl"+(mode==="separate"?" on":"");
+// ===== 設定変更 =====
+async function setGameMode(mode) {
+  gameMode = mode;
+  if (roomCode) await dbSet(`rooms/${roomCode}/gameMode`, mode);
+  document.getElementById("mode-mixed").className = "tgl" + (mode==="mixed" ? " on" : "");
+  document.getElementById("mode-sep").className = "tgl" + (mode==="separate" ? " on" : "");
+  document.getElementById("mode-level").className = "tgl" + (mode==="level" ? " on" : "");
 }
-async function setCourtNum(num){
-  courtNum=num;
-  if(roomCode) await dbSet(`rooms/${roomCode}/courtNum`, num);
-  document.getElementById("court-1").className="tgl"+(num===1?" on":"");
-  document.getElementById("court-2").className="tgl"+(num===2?" on":"");
+async function setCourtNum(num) {
+  courtNum = num;
+  if (roomCode) await dbSet(`rooms/${roomCode}/courtNum`, num);
+  document.getElementById("court-1").className = "tgl" + (num===1 ? " on" : "");
+  document.getElementById("court-2").className = "tgl" + (num===2 ? " on" : "");
 }
-async function setDivMode(mode){
-  divMode=mode;
-  if(roomCode) await dbSet(`rooms/${roomCode}/divMode`, mode);
-  document.getElementById("dc-btn").style.cssText=`flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:${mode==="count"?"#4f46e5":"white"};color:${mode==="count"?"white":"#6b7280"}`;
-  document.getElementById("dt-btn").style.cssText=`flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:${mode==="team"?"#4f46e5":"white"};color:${mode==="team"?"white":"#6b7280"}`;
-  document.getElementById("sz-label").textContent=mode==="count"?"1チームの人数":"チーム数";
+async function setDivMode(mode) {
+  divMode = mode;
+  if (roomCode) await dbSet(`rooms/${roomCode}/divMode`, mode);
+  document.getElementById("dc-btn").style.cssText = `flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:${mode==="count"?"#4f46e5":"white"};color:${mode==="count"?"white":"#6b7280"}`;
+  document.getElementById("dt-btn").style.cssText = `flex:1;padding:.6rem;font-size:.8rem;font-weight:700;border:none;cursor:pointer;background:${mode==="team"?"#4f46e5":"white"};color:${mode==="team"?"white":"#6b7280"}`;
+  document.getElementById("sz-label").textContent = mode==="count" ? "1チームの人数" : "チーム数";
   buildSzBtns();
 }
-async function toggleAdminJoin(){
-  adminJoin=!adminJoin;
-  if(roomCode) await dbSet(`rooms/${roomCode}/adminJoin`, adminJoin);
-  document.getElementById("toggle-bg").style.background=adminJoin?"#4f46e5":"#d1d5db";
-  document.getElementById("toggle-knob").style.left=adminJoin?"23px":"3px";
+async function toggleAdminJoin() {
+  adminJoin = !adminJoin;
+  if (roomCode) await dbSet(`rooms/${roomCode}/adminJoin`, adminJoin);
+  document.getElementById("toggle-bg").style.background = adminJoin ? "#4f46e5" : "#d1d5db";
+  document.getElementById("toggle-knob").style.left = adminJoin ? "23px" : "3px";
 }
-async function setSize(n){
-  if(roomCode) await dbSet(`rooms/${roomCode}/teamSize`, n);
+async function setSize(n) { if (roomCode) await dbSet(`rooms/${roomCode}/teamSize`, n); }
+
+function buildSzBtns() {
+  const opts = divMode==="count" ? [2,3,4,5,6,7,8,9,10] : [2,3,4,5,6,7,8,9,10,11,12];
+  const cur = parseInt(document.querySelector(".szbtn.on")?.textContent) || 5;
+  const best = opts.includes(cur) ? cur : (opts[3] || 5);
+  document.getElementById("sz-btns").innerHTML = opts.map(n => `<button class="szbtn${n===best?" on":""}" onclick="setSize(${n})">${n}</button>`).join("");
 }
 
-function buildSzBtns(){
-  const opts=divMode==="count"?[2,3,4,5,6,7,8,10]:[2,3,4,5,6,7,8,9,10,11,12,];
-  const cur=parseInt(document.querySelector(".szbtn.on")?.textContent)||5;
-  const best=opts.includes(cur)?cur:(opts[3]||5);
-  document.getElementById("sz-btns").innerHTML=opts.map(n=>`<button class="szbtn${n===best?" on":""}" onclick="setSize(${n})">${n}</button>`).join("");
-}
-
-function startAdminPoll(){
+// ===== 管理者画面描画 =====
+function startAdminPoll() {
   buildSzBtns();
-  startPoll(async()=>{const room=await dbGet(`rooms/${roomCode}`);if(room)renderAdmin(room);});
+  startPoll(async () => { const room = await dbGet(`rooms/${roomCode}`); if (room) renderAdmin(room); });
 }
 
-function renderAdmin(room){
+function renderAdmin(room) {
   gameMode = room.gameMode || "mixed";
   courtNum = room.courtNum || 2;
   divMode = room.divMode || "count";
-  adminJoin = room.adminJoin !== false; 
+  adminJoin = room.adminJoin !== false;
 
-  document.getElementById("mode-mixed").className="tgl"+(gameMode==="mixed"?" on":"");
-  document.getElementById("mode-sep").className="tgl"+(gameMode==="separate"?" on":"");
-  document.getElementById("court-1").className="tgl"+(courtNum===1?" on":"");
-  document.getElementById("court-2").className="tgl"+(courtNum===2?" on":"");
-  document.getElementById("dc-btn").style.background = divMode==="count"?"#4f46e5":"white";
-  document.getElementById("dc-btn").style.color = divMode==="count"?"white":"#6b7280";
-  document.getElementById("dt-btn").style.background = divMode==="team"?"#4f46e5":"white";
-  document.getElementById("dt-btn").style.color = divMode==="team"?"white":"#6b7280";
-  document.getElementById("sz-label").textContent = divMode==="count"?"1チームの人数":"チーム数";
-  document.querySelectorAll(".szbtn").forEach(b=>b.classList.toggle("on",parseInt(b.textContent)===room.teamSize));
-  document.getElementById("toggle-bg").style.background=adminJoin?"#4f46e5":"#d1d5db";
-  document.getElementById("toggle-knob").style.left=adminJoin?"23px":"3px";
+  document.getElementById("mode-mixed").className = "tgl" + (gameMode==="mixed" ? " on" : "");
+  document.getElementById("mode-sep").className = "tgl" + (gameMode==="separate" ? " on" : "");
+  document.getElementById("mode-level").className = "tgl" + (gameMode==="level" ? " on" : "");
+  document.getElementById("court-1").className = "tgl" + (courtNum===1 ? " on" : "");
+  document.getElementById("court-2").className = "tgl" + (courtNum===2 ? " on" : "");
+  document.getElementById("dc-btn").style.background = divMode==="count" ? "#4f46e5" : "white";
+  document.getElementById("dc-btn").style.color = divMode==="count" ? "white" : "#6b7280";
+  document.getElementById("dt-btn").style.background = divMode==="team" ? "#4f46e5" : "white";
+  document.getElementById("dt-btn").style.color = divMode==="team" ? "white" : "#6b7280";
+  document.getElementById("sz-label").textContent = divMode==="count" ? "1チームの人数" : "チーム数";
+  document.querySelectorAll(".szbtn").forEach(b => b.classList.toggle("on", parseInt(b.textContent) === room.teamSize));
+  document.getElementById("toggle-bg").style.background = adminJoin ? "#4f46e5" : "#d1d5db";
+  document.getElementById("toggle-knob").style.left = adminJoin ? "23px" : "3px";
 
-  const parts=Object.values(room.participants||{});
-  const waiting=parts.filter(p=>p.status==="waiting");
-  const approved=parts.filter(p=>p.status==="approved");
-  const teamEntries=Object.entries(room.teams||{});
-  const teamKeys=Object.keys(room.teams||{});
+  const parts = Object.values(room.participants || {});
+  const waiting = parts.filter(p => p.status === "waiting");
+  const approved = parts.filter(p => p.status === "approved");
+  const teamEntries = Object.entries(room.teams || {});
+  const teamKeys = Object.keys(room.teams || {});
 
-  const aMale=adminJoin&&myGender==='male';
-  const aFemale=adminJoin&&myGender==='female';
-  const maleCount=approved.filter(p=>p.gender==='male').length+(aMale?1:0);
-  const femaleCount=approved.filter(p=>p.gender==='female').length+(aFemale?1:0);
-  const totalCount=adminJoin?approved.length+1:approved.length;
+  const aMale = adminJoin && myGender === 'male';
+  const aFemale = adminJoin && myGender === 'female';
+  const aGachi = adminJoin && myLevel === 'gachi';
+  const aEnjoy = adminJoin && myLevel === 'enjoy';
+  const maleCount = approved.filter(p => p.gender==='male').length + (aMale ? 1 : 0);
+  const femaleCount = approved.filter(p => p.gender==='female').length + (aFemale ? 1 : 0);
+  const gachiCount = approved.filter(p => p.level==='gachi').length + (aGachi ? 1 : 0);
+  const enjoyCount = approved.filter(p => p.level==='enjoy').length + (aEnjoy ? 1 : 0);
+  const totalCount = adminJoin ? approved.length + 1 : approved.length;
 
-  document.getElementById("a-code").textContent=roomCode;
-  document.getElementById("a-stats").textContent=`承認済み: ${approved.length}人 👦${approved.filter(p=>p.gender==='male').length} 👧${approved.filter(p=>p.gender==='female').length} 申請中: ${waiting.length}人`;
-  document.getElementById("a-badge").textContent=room.gameStarted?"🏃 試合中":"⏳ 待機中";
-  document.getElementById("a-badge").style.background=room.gameStarted?"#10b981":"#4f46e5";
+  document.getElementById("a-code").textContent = roomCode;
+  document.getElementById("a-stats").textContent =
+    gameMode === "level"
+      ? `承認済み: ${approved.length}人 🔥${approved.filter(p=>p.level==='gachi').length} 😊${approved.filter(p=>p.level==='enjoy').length} 申請中: ${waiting.length}人`
+      : `承認済み: ${approved.length}人 👦${approved.filter(p=>p.gender==='male').length} 👧${approved.filter(p=>p.gender==='female').length} 申請中: ${waiting.length}人`;
+  document.getElementById("a-badge").textContent = room.gameStarted ? "🏃 試合中" : "⏳ 待機中";
+  document.getElementById("a-badge").style.background = room.gameStarted ? "#10b981" : "#4f46e5";
 
-  if(waiting.length>0){
-    document.getElementById("a-req-sec").style.display="block";
-    document.getElementById("a-req-title").textContent=`入室申請 (${waiting.length}件)${room.gameStarted?" — 途中参加":""}`;
-    document.getElementById("a-req-list").innerHTML=waiting.map(p=>`
+  // 申請
+  if (waiting.length > 0) {
+    document.getElementById("a-req-sec").style.display = "block";
+    document.getElementById("a-req-title").textContent = `入室申請 (${waiting.length}件)${room.gameStarted ? " — 途中参加" : ""}`;
+    document.getElementById("a-req-list").innerHTML = waiting.map(p => `
       <div class="row">
         <div class="av" style="background:#fef3c7;color:#d97706">${p.name[0]}</div>
         <span style="flex:1;font-size:.9rem;color:#1f2937">${p.name}</span>
-        <span style="font-size:.8rem;margin-right:.25rem">${p.gender==='male'?'👦':'👧'}</span>
+        <span style="font-size:.75rem;margin-right:.25rem">${p.gender==='male'?'👦':'👧'} ${levelLabel(p.level)}</span>
         ${room.gameStarted
-          ?`<button class="btn-sm btn-add" onclick="addLate('${p.id}')">追加</button>&nbsp;<button class="btn-sm btn-reject" onclick="kickUser('${p.id}')">拒否</button>`
-          :`<button class="btn-sm btn-approve" onclick="approveUser('${p.id}')">承認</button>&nbsp;<button class="btn-sm btn-reject" onclick="kickUser('${p.id}')">拒否</button>`}
+          ? `<button class="btn-sm btn-add" onclick="addLate('${p.id}')">追加</button>&nbsp;<button class="btn-sm btn-reject" onclick="kickUser('${p.id}')">拒否</button>`
+          : `<button class="btn-sm btn-approve" onclick="approveUser('${p.id}')">承認</button>&nbsp;<button class="btn-sm btn-reject" onclick="kickUser('${p.id}')">拒否</button>`}
       </div>`).join("");
   } else {
-    document.getElementById("a-req-sec").style.display="none";
+    document.getElementById("a-req-sec").style.display = "none";
   }
 
-  let prev="";
-  if(gameMode==="separate"){
-    const mT=divMode==="count"?Math.ceil(maleCount/Math.max(room.teamSize,1)):Math.round((room.teamSize||4)*maleCount/Math.max(totalCount,1));
-    const fT=divMode==="count"?Math.ceil(femaleCount/Math.max(room.teamSize,1)):Math.max(0,(room.teamSize||4)-mT);
-    prev=`👦男子 ${maleCount}人 → 約${mT}チーム 👧女子 ${femaleCount}人 → 約${fT}チーム`;
+  // プレビュー
+  let prev = "";
+  if (gameMode === "separate") {
+    const mT = divMode==="count" ? Math.ceil(maleCount/Math.max(room.teamSize,1)) : Math.round((room.teamSize||4)*maleCount/Math.max(totalCount,1));
+    const fT = divMode==="count" ? Math.ceil(femaleCount/Math.max(room.teamSize,1)) : Math.max(0,(room.teamSize||4)-mT);
+    prev = `👦男子 ${maleCount}人 → 約${mT}チーム　👧女子 ${femaleCount}人 → 約${fT}チーム`;
+  } else if (gameMode === "level") {
+    const gT = divMode==="count" ? Math.ceil(gachiCount/Math.max(room.teamSize,1)) : Math.round((room.teamSize||4)*gachiCount/Math.max(totalCount,1));
+    const eT = divMode==="count" ? Math.ceil(enjoyCount/Math.max(room.teamSize,1)) : Math.max(0,(room.teamSize||4)-gT);
+    prev = `🔥ガチ ${gachiCount}人 → 約${gT}チーム　😊エンジョイ ${enjoyCount}人 → 約${eT}チーム`;
   } else {
-    const sz=room.teamSize||5;
-    prev=divMode==="count"
-      ?`参加 <strong>${totalCount}人</strong> ÷ <strong>${sz}人</strong> = 約 <strong>${Math.ceil(totalCount/sz)}チーム</strong>${totalCount%sz?` <span style="font-size:.75rem;color:#818cf8">（最終${totalCount%sz}人）</span>`:""}`
-      :`参加 <strong>${totalCount}人</strong> → <strong>${sz}チーム</strong>（各約${Math.floor(totalCount/sz)}〜${Math.ceil(totalCount/sz)}人）`;
+    const sz = room.teamSize || 5;
+    prev = divMode==="count"
+      ? `参加 <strong>${totalCount}人</strong> ÷ <strong>${sz}人</strong> = 約 <strong>${Math.ceil(totalCount/sz)}チーム</strong>${totalCount%sz ? ` <span style="font-size:.75rem;color:#818cf8">（最終${totalCount%sz}人）</span>` : ""}`
+      : `参加 <strong>${totalCount}人</strong> → <strong>${sz}チーム</strong>（各約${Math.floor(totalCount/sz)}〜${Math.ceil(totalCount/sz)}人）`;
   }
-  document.getElementById("a-preview").innerHTML=prev;
-  
-  const sb=document.getElementById("a-shuffle");
-  sb.disabled=totalCount<2;
-  sb.style.opacity=totalCount<2?"0.4":"1";
-  
-  if(room.gameStarted) {
-    sb.innerHTML = "🔀 人数やモードを変更して再チーム分け";
-    sb.style.background = "#8b5cf6"; 
-  } else {
-    sb.innerHTML = "🔀 ランダムでチーム分けする";
-    sb.style.background = "#4f46e5";
-  }
+  document.getElementById("a-preview").innerHTML = prev;
 
-  document.getElementById("a-approved-title").textContent=`承認済み参加者 (${approved.length}人)`;
-  document.getElementById("a-approved-list").innerHTML=approved.length===0?'<div class="empty">まだ参加者がいません</div>':approved.map(p=>{
-    const entry=teamEntries.find(([k,t])=>t.members&&Object.values(t.members).some(m=>m.id===p.id));
-    const col=entry?tCol(entry[0]):null;
-    return `<div class="row">
-      <div class="av" style="background:${col?col.light:"#f3f4f6"};color:${col?col.text:"#6b7280"}">${p.name[0]}</div>
-      <div style="flex:1">
-        <span style="font-size:.9rem;font-weight:500;color:#1f2937">${p.name}</span>
-        <span style="font-size:.8rem;margin-left:.25rem">${p.gender==='male'?'👦':'👧'}</span>
-        ${entry?`<div style="font-size:.75rem;color:${col.text};font-weight:600">チーム ${tNum(entry[0])}</div>`:''}
-      </div>
-      <button class="btn-sm btn-kick" onclick="kickUser('${p.id}')">キック</button>
-    </div>`;
-  }).join("");
+  const sb = document.getElementById("a-shuffle");
+  sb.disabled = totalCount < 2;
+  sb.style.opacity = totalCount < 2 ? "0.4" : "1";
+  sb.innerHTML = room.gameStarted ? "🔀 再チーム分け" : "🔀 ランダムでチーム分けする";
+  sb.style.background = room.gameStarted ? "#8b5cf6" : "#4f46e5";
 
-  if(room.gameStarted&&teamKeys.length>0){
-    document.getElementById("a-teams-sec").style.display="block";
-    document.getElementById("a-teams-list").innerHTML=teamKeys.map(k=>{
-      const t=room.teams[k];const col=tCol(k);const ms=Object.values(t.members||{});
+  // 承認済み一覧
+  document.getElementById("a-approved-title").textContent = `承認済み参加者 (${approved.length}人)`;
+  document.getElementById("a-approved-list").innerHTML = approved.length === 0
+    ? '<div class="empty">まだ参加者がいません</div>'
+    : approved.map(p => {
+        const entry = teamEntries.find(([k,t]) => t.members && Object.values(t.members).some(m => m.id === p.id));
+        const col = entry ? tCol(entry[0]) : null;
+        return `<div class="row">
+          <div class="av" style="background:${col?col.light:"#f3f4f6"};color:${col?col.text:"#6b7280"}">${p.name[0]}</div>
+          <div style="flex:1">
+            <span style="font-size:.9rem;font-weight:500;color:#1f2937">${p.name}</span>
+            <span style="font-size:.75rem;margin-left:.25rem">${p.gender==='male'?'👦':'👧'}</span>
+            <span style="font-size:.72rem;margin-left:.2rem;color:${p.level==='gachi'?'#ef4444':'#10b981'}">${levelLabel(p.level)}</span>
+            ${entry ? `<div style="font-size:.75rem;color:${col.text};font-weight:600">チーム ${tNum(entry[0])}</div>` : ''}
+          </div>
+          <button class="btn-sm btn-kick" onclick="kickUser('${p.id}')">キック</button>
+        </div>`;
+      }).join("");
+
+  // チーム結果
+  if (room.gameStarted && teamKeys.length > 0) {
+    document.getElementById("a-teams-sec").style.display = "block";
+    document.getElementById("a-teams-list").innerHTML = teamKeys.map(k => {
+      const t = room.teams[k]; const col = tCol(k); const ms = Object.values(t.members || {});
+      const tag = t.level === 'gachi' ? '<span style="font-size:.75rem;color:#ef4444">🔥ガチ</span>'
+                : t.level === 'enjoy' ? '<span style="font-size:.75rem;color:#10b981">😊エンジョイ</span>'
+                : t.gender === 'male' ? '<span style="font-size:.75rem;color:#3b82f6">👦男子</span>'
+                : t.gender === 'female' ? '<span style="font-size:.75rem;color:#ec4899">👧女子</span>'
+                : '<span style="font-size:.75rem;color:#6b7280">混合</span>';
       return `<div style="background:${col.light};border:2px solid ${col.border};border-radius:.75rem;padding:.75rem 1rem;margin-bottom:.75rem">
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
           <span style="background:${col.bg};color:white;font-size:.8rem;font-weight:800;padding:.25rem .75rem;border-radius:9999px">チーム ${tNum(k)}</span>
           <span style="font-size:.8rem;color:${col.text};font-weight:600">${ms.length}人</span>
-          ${t.gender==='male'?'<span style="font-size:.75rem;color:#3b82f6">👦男子</span>':t.gender==='female'?'<span style="font-size:.75rem;color:#ec4899">👧女子</span>':'<span style="font-size:.75rem;color:#6b7280">混合</span>'}
+          ${tag}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:.4rem">
-          ${ms.map(m=>`<span style="background:white;color:${col.text};font-size:.75rem;padding:.2rem .6rem;border-radius:9999px">${m.name} ${m.gender==='male'?'👦':'👧'}</span>`).join("")}
+          ${ms.map(m => `<span style="background:white;color:${col.text};font-size:.75rem;padding:.2rem .6rem;border-radius:9999px">${m.name} ${m.gender==='male'?'👦':'👧'}${levelLabel(m.level)?` ${levelLabel(m.level)}`:''}</span>`).join("")}
         </div>
       </div>`;
     }).join("");
   } else {
-    document.getElementById("a-teams-sec").style.display="none";
+    document.getElementById("a-teams-sec").style.display = "none";
   }
 
-  if(room.schedule&&room.gameStarted){
-    document.getElementById("a-sched-sec").style.display="block";
-    const isSingleCourt = !room.schedule.court2?.matches?.length;
-    const courts=[{k:"court1",l:isSingleCourt?"コート":"ステージ側",c:"#4338ca"},{k:"court2",l:"出入口側",c:"#0891b2"}];
-    document.getElementById("a-sched").innerHTML=courts.map(({k,l,c})=>{
-      const court=room.schedule[k];
-      if(!court?.matches?.length)return"";
+  // スケジュール
+  if (room.schedule && room.gameStarted) {
+    document.getElementById("a-sched-sec").style.display = "block";
+    const isSingle = !room.schedule.court2?.matches?.length;
+    const courts = [
+      {k:"court1", l:isSingle?"コート":"ステージ側", c:"#4338ca"},
+      {k:"court2", l:"出入口側", c:"#0891b2"}
+    ];
+    document.getElementById("a-sched").innerHTML = courts.map(({k,l,c}) => {
+      const court = room.schedule[k];
+      if (!court?.matches?.length) return "";
       return `<div style="background:${c};border-radius:1.25rem;padding:1.25rem;margin-bottom:1rem">
-        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
+        <div style="margin-bottom:1rem">
           <span style="background:rgba(255,255,255,.2);color:white;font-size:.8rem;font-weight:800;padding:.3rem .75rem;border-radius:9999px">🏟 ${l}</span>
         </div>
         <div style="color:white">${renderMatches(court.matches)}</div>
       </div>`;
     }).join("");
   } else {
-    document.getElementById("a-sched-sec").style.display="none";
+    document.getElementById("a-sched-sec").style.display = "none";
   }
-  
+
   syncTimerFromDB(room);
 }
 
-async function doShuffle(){
-  const room=await dbGet(`rooms/${roomCode}`);
-  const base=Object.values(room.participants||{}).filter(p=>p.status==="approved");
-  const adminM={id:myId,name:myName,status:"approved",gender:myGender};
-  const all=adminJoin?[adminM,...base]:base;
-  if(all.length<2)return;
-  const sz=room.teamSize||5;
-  let teams={},ti=0;
+// ===== シャッフル =====
+async function doShuffle() {
+  const room = await dbGet(`rooms/${roomCode}`);
+  const base = Object.values(room.participants || {}).filter(p => p.status === "approved");
+  const adminM = { id: myId, name: myName, status: "approved", gender: myGender, level: myLevel };
+  const all = adminJoin ? [adminM, ...base] : base;
+  if (all.length < 2) return;
+  const sz = room.teamSize || 5;
+  let teams = {}, ti = 0;
 
-  if(gameMode==="separate"){
-    const males=[...all.filter(p=>p.gender==='male')].sort(()=>Math.random()-.5);
-    const females=[...all.filter(p=>p.gender==='female')].sort(()=>Math.random()-.5);
-    if(divMode==="count"){
-      for(let i=0;i<males.length;i+=sz){const chunk=males.slice(i,i+sz);const mem={};chunk.forEach(m=>mem[m.id]=m);teams[`team${ti}`]={id:`team${ti}`,members:mem,gender:'male'};ti++;}
-      for(let i=0;i<females.length;i+=sz){const chunk=females.slice(i,i+sz);const mem={};chunk.forEach(m=>mem[m.id]=m);teams[`team${ti}`]={id:`team${ti}`,members:mem,gender:'female'};ti++;}
+  if (gameMode === "level") {
+    // ガチ/エンジョイ別
+    const gachi = [...all.filter(p => p.level === 'gachi')].sort(() => Math.random() - .5);
+    const enjoy = [...all.filter(p => p.level === 'enjoy')].sort(() => Math.random() - .5);
+    if (divMode === "count") {
+      for (let i = 0; i < gachi.length; i += sz) { const chunk = gachi.slice(i,i+sz); const mem = {}; chunk.forEach(m => mem[m.id]=m); teams[`team${ti}`]={id:`team${ti}`,members:mem,level:'gachi'}; ti++; }
+      for (let i = 0; i < enjoy.length; i += sz) { const chunk = enjoy.slice(i,i+sz); const mem = {}; chunk.forEach(m => mem[m.id]=m); teams[`team${ti}`]={id:`team${ti}`,members:mem,level:'enjoy'}; ti++; }
+    } else {
+      const gT = Math.max(gachi.length>0?1:0, Math.round(sz*gachi.length/Math.max(all.length,1)));
+      const eT = Math.max(enjoy.length>0?1:0, sz-gT);
+      if (gT > 0) { for (let i=0;i<gT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},level:'gachi'};ti++;} gachi.forEach((m,i)=>{teams[`team${i%gT}`].members[m.id]=m;}); }
+      if (eT > 0) { const es=ti; for (let i=0;i<eT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},level:'enjoy'};ti++;} enjoy.forEach((m,i)=>{teams[`team${es+i%eT}`].members[m.id]=m;}); }
+    }
+  } else if (gameMode === "separate") {
+    // 男女別
+    const males = [...all.filter(p => p.gender==='male')].sort(() => Math.random()-.5);
+    const females = [...all.filter(p => p.gender==='female')].sort(() => Math.random()-.5);
+    if (divMode === "count") {
+      for (let i=0;i<males.length;i+=sz){const chunk=males.slice(i,i+sz);const mem={};chunk.forEach(m=>mem[m.id]=m);teams[`team${ti}`]={id:`team${ti}`,members:mem,gender:'male'};ti++;}
+      for (let i=0;i<females.length;i+=sz){const chunk=females.slice(i,i+sz);const mem={};chunk.forEach(m=>mem[m.id]=m);teams[`team${ti}`]={id:`team${ti}`,members:mem,gender:'female'};ti++;}
     } else {
       const mT=Math.max(1,Math.round(sz*males.length/Math.max(all.length,1)));
       const fT=Math.max(females.length>0?1:0,sz-mT);
-      const mShuf=[...males].sort(()=>Math.random()-.5);
       for(let i=0;i<mT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},gender:'male'};ti++;}
-      mShuf.forEach((m,i)=>{const k=`team${i%mT}`;teams[k].members[m.id]=m;});
-      if(fT>0){
-        const fStart=ti;const fShuf=[...females].sort(()=>Math.random()-.5);
-        for(let i=0;i<fT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},gender:'female'};ti++;}
-        fShuf.forEach((m,i)=>{const k=`team${fStart+i%fT}`;teams[k].members[m.id]=m;});
-      }
+      males.forEach((m,i)=>{teams[`team${i%mT}`].members[m.id]=m;});
+      if(fT>0){const fs=ti;for(let i=0;i<fT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},gender:'female'};ti++;}females.forEach((m,i)=>{teams[`team${fs+i%fT}`].members[m.id]=m;});}
     }
   } else {
-    const males=[...all.filter(p=>p.gender==='male')].sort(()=>Math.random()-.5);
-    const females=[...all.filter(p=>p.gender==='female')].sort(()=>Math.random()-.5);
-    const tCount=divMode==="count"?Math.ceil(all.length/sz):sz;
-    const actualTC=Math.max(1,tCount);
-    for(let i=0;i<actualTC;i++){teams[`team${i}`]={id:`team${i}`,members:{},gender:'mixed'};}
-    
+    // 混合
+    const males = [...all.filter(p => p.gender==='male')].sort(() => Math.random()-.5);
+    const females = [...all.filter(p => p.gender==='female')].sort(() => Math.random()-.5);
+    const tCount = divMode==="count" ? Math.ceil(all.length/sz) : sz;
+    const actualTC = Math.max(1, tCount);
+    for (let i=0;i<actualTC;i++){teams[`team${i}`]={id:`team${i}`,members:{},gender:'mixed'};}
     males.forEach((m,i)=>{teams[`team${i%actualTC}`].members[m.id]=m;});
-    const offset=males.length;
+    const offset = males.length;
     females.forEach((m,i)=>{teams[`team${(i+offset)%actualTC}`].members[m.id]=m;});
   }
 
-  const schedule=buildCourts(teams);
-  await dbSet(`rooms/${roomCode}/teams`,teams);
-  await dbSet(`rooms/${roomCode}/gameStarted`,true);
-  await dbSet(`rooms/${roomCode}/schedule`,schedule);
+  const schedule = buildCourts(teams);
+  await dbSet(`rooms/${roomCode}/teams`, teams);
+  await dbSet(`rooms/${roomCode}/gameStarted`, true);
+  await dbSet(`rooms/${roomCode}/schedule`, schedule);
 }
 
-function buildCourts(teams){
+// ===== コート・スケジュール生成 =====
+function buildCourts(teams) {
   const keys = Object.keys(teams);
 
-  function createRoundRobin(teamKeys){
-    if(teamKeys.length <= 1) return [];
+  // ガチ/エンジョイ別モード：独立した総当たりを各コートで
+  if (gameMode === "level") {
+    const gachiKeys = keys.filter(k => teams[k].level === 'gachi');
+    const enjoyKeys = keys.filter(k => teams[k].level === 'enjoy');
+
+    function makeMatchList(groupKeys) {
+      if (groupKeys.length < 2) return [];
+      let rot = [...groupKeys];
+      if (rot.length % 2 !== 0) rot.push("BYE");
+      const rounds = rot.length - 1, half = rot.length / 2;
+      const pairs = [];
+      for (let r = 0; r < rounds; r++) {
+        for (let i = 0; i < half; i++) {
+          const t1 = rot[i], t2 = rot[rot.length-1-i];
+          if (t1 !== "BYE" && t2 !== "BYE") pairs.push({t1, t2});
+        }
+        const fixed = rot[0]; const rest = rot.slice(1); rest.unshift(rest.pop()); rot = [fixed, ...rest];
+      }
+      const rc = {}; groupKeys.forEach(k => rc[k] = 0);
+      return pairs.map((m, i) => {
+        const avail = groupKeys.filter(k => k!==m.t1&&k!==m.t2).sort((a,b) => rc[a]-rc[b]||Math.random()-.5);
+        const ref = avail[0] || null;
+        if (ref) rc[ref]++;
+        return {...m, ref, num:i+1, displayNum:i+1, slotIndex:i};
+      });
+    }
+
+    if (courtNum === 2 && gachiKeys.length >= 2 && enjoyKeys.length >= 2) {
+      return {
+        court1: { teamKeys: gachiKeys, matches: makeMatchList(gachiKeys) },
+        court2: { teamKeys: enjoyKeys, matches: makeMatchList(enjoyKeys) }
+      };
+    }
+    // 片方しかいない場合
+    const dominant = gachiKeys.length >= enjoyKeys.length ? gachiKeys : enjoyKeys;
+    if (courtNum === 2 && dominant.length >= 4) {
+      const mid = Math.ceil(dominant.length / 2);
+      return {
+        court1: { teamKeys: dominant.slice(0,mid), matches: makeMatchList(dominant.slice(0,mid)) },
+        court2: { teamKeys: dominant.slice(mid), matches: makeMatchList(dominant.slice(mid)) }
+      };
+    }
+    // 1コート：ガチ→エンジョイの順で交互
+    const gM = makeMatchList(gachiKeys), eM = makeMatchList(enjoyKeys);
+    const merged = []; let gi=0, ei=0;
+    while (gi<gM.length||ei<eM.length) { if(gi<gM.length)merged.push(gM[gi++]); if(ei<eM.length)merged.push(eM[ei++]); }
+    return { court1: { teamKeys: keys, matches: merged.map((m,i)=>({...m,num:i+1,displayNum:i+1,slotIndex:i})) }, court2: null };
+  }
+
+  // 既存の男女別・混合モード処理
+  function createRoundRobin(teamKeys) {
+    if (teamKeys.length <= 1) return [];
     let rotation = [...teamKeys];
-    const isOdd = rotation.length % 2 === 1;
-    if(isOdd) rotation.push("BYE");
-
-    const rounds = rotation.length - 1;
-    const half = rotation.length / 2;
+    if (rotation.length % 2 === 1) rotation.push("BYE");
+    const rounds = rotation.length - 1, half = rotation.length / 2;
     const result = [];
-
-    for(let round = 0; round < rounds; round++){
+    for (let round = 0; round < rounds; round++) {
       let matches = [];
-      for(let i = 0; i < half; i++){
-        const t1 = rotation[i];
-        const t2 = rotation[rotation.length - 1 - i];
-        if(t1 === "BYE" || t2 === "BYE") continue;
-        matches.push({ t1, t2 });
+      for (let i = 0; i < half; i++) {
+        const t1 = rotation[i], t2 = rotation[rotation.length-1-i];
+        if (t1 !== "BYE" && t2 !== "BYE") matches.push({t1, t2});
       }
       result.push(matches);
-      
-      const fixed = rotation[0];
-      const rest = rotation.slice(1);
-      rest.unshift(rest.pop());
-      rotation = [fixed, ...rest];
+      const fixed = rotation[0]; const rest = rotation.slice(1); rest.unshift(rest.pop()); rotation = [fixed, ...rest];
     }
     return result;
   }
 
   let allMatches = [];
-  if(gameMode === "separate"){
+  if (gameMode === "separate") {
     const maleKeys = keys.filter(k => teams[k].gender === "male");
     const femaleKeys = keys.filter(k => teams[k].gender === "female");
     const maleRounds = createRoundRobin(maleKeys);
     const femaleRounds = createRoundRobin(femaleKeys);
-
     const maxRounds = Math.max(maleRounds.length, femaleRounds.length);
-    for(let i = 0; i < maxRounds; i++){
-      if(maleRounds[i]) allMatches.push(...maleRounds[i]);
-      if(femaleRounds[i]) allMatches.push(...femaleRounds[i]);
+    for (let i = 0; i < maxRounds; i++) {
+      if (maleRounds[i]) allMatches.push(...maleRounds[i]);
+      if (femaleRounds[i]) allMatches.push(...femaleRounds[i]);
     }
   } else {
     const rounds = createRoundRobin(keys);
@@ -918,193 +943,125 @@ function buildCourts(teams){
   }
 
   const slots = [];
-  const remainingMatches = [...allMatches];
-
-  while (remainingMatches.length > 0) {
-    const currentSlot = [];
-    const busyTeams = new Set();
-
-    for (let i = 0; i < remainingMatches.length; i++) {
-      if (currentSlot.length >= courtNum) break; 
-      const match = remainingMatches[i];
-
-      if (!busyTeams.has(match.t1) && !busyTeams.has(match.t2)) {
-        currentSlot.push(match);
-        busyTeams.add(match.t1);
-        busyTeams.add(match.t2);
-        remainingMatches.splice(i, 1);
-        i--; 
-      }
+  const remaining = [...allMatches];
+  while (remaining.length > 0) {
+    const slot = []; const busy = new Set();
+    for (let i = 0; i < remaining.length; i++) {
+      if (slot.length >= courtNum) break;
+      const m = remaining[i];
+      if (!busy.has(m.t1) && !busy.has(m.t2)) { slot.push(m); busy.add(m.t1); busy.add(m.t2); remaining.splice(i,1); i--; }
     }
-
-    if (currentSlot.length === 0 && remainingMatches.length > 0) {
-      const match = remainingMatches.shift();
-      currentSlot.push(match);
-    }
-
-    slots.push(currentSlot);
+    if (slot.length === 0 && remaining.length > 0) slot.push(remaining.shift());
+    slots.push(slot);
   }
 
-  let court1 = [];
-  let court2 = [];
-  const refCount = {};
-  keys.forEach(k => refCount[k] = 0);
+  let court1 = [], court2 = [];
+  const refCount = {}; keys.forEach(k => refCount[k] = 0);
 
   slots.forEach((slot, slotIndex) => {
-    const busyTeams = new Set();
-    slot.forEach(m => {
-      busyTeams.add(m.t1);
-      busyTeams.add(m.t2);
-    });
-
+    const busy = new Set(); slot.forEach(m => { busy.add(m.t1); busy.add(m.t2); });
     slot.forEach((match, idx) => {
       match.slotIndex = slotIndex;
-
-      let candidates = keys.filter(k => !busyTeams.has(k)); 
-
-      if (gameMode === "separate" && candidates.length > 0) {
-        const matchGender = teams[match.t1]?.gender;
-        const sameGender = candidates.filter(k => teams[k].gender === matchGender);
-        if (sameGender.length > 0) candidates = sameGender;
+      let cands = keys.filter(k => !busy.has(k));
+      if (gameMode === "separate" && cands.length > 0) {
+        const mg = teams[match.t1]?.gender;
+        const sg = cands.filter(k => teams[k].gender === mg);
+        if (sg.length > 0) cands = sg;
       }
-
-      if (candidates.length > 0) {
-        candidates.sort((a, b) => refCount[a] - refCount[b] || Math.random() - 0.5);
-        const ref = candidates[0];
-        match.ref = ref;
-        refCount[ref]++;
-      } else {
-        match.ref = null; 
-      }
-
-      if (courtNum === 1) {
-        match.displayNum = court1.length + 1; 
-        court1.push(match);
-      } else {
-        if (idx === 0) {
-          match.displayNum = court1.length + 1; 
-          court1.push(match);
-        } else {
-          match.displayNum = court2.length + 1; 
-          court2.push(match);
-        }
-      }
+      if (cands.length > 0) { cands.sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5); match.ref = cands[0]; refCount[cands[0]]++; } else { match.ref = null; }
+      if (courtNum === 1) { match.displayNum = court1.length+1; court1.push(match); }
+      else { if (idx===0) { match.displayNum = court1.length+1; court1.push(match); } else { match.displayNum = court2.length+1; court2.push(match); } }
     });
   });
 
   return {
     court1: { teamKeys: keys, matches: court1 },
-    court2: courtNum === 2 ? { teamKeys: keys, matches: court2 } : null
+    court2: courtNum===2 ? { teamKeys: keys, matches: court2 } : null
   };
 }
 
-function copyCode(){
-  navigator.clipboard?.writeText(roomCode).catch(()=>{});
-  document.getElementById("copy-btn").textContent="✓";
-  setTimeout(()=>document.getElementById("copy-btn").textContent="📋",2000);
+// ===== ユーティリティ =====
+function copyCode() {
+  navigator.clipboard?.writeText(roomCode).catch(() => {});
+  document.getElementById("copy-btn").textContent = "✓";
+  setTimeout(() => document.getElementById("copy-btn").textContent = "📋", 2000);
 }
 
-let confirmCallback=null;
-function showConfirm(msg,fn){
-  confirmCallback=fn;
-  document.getElementById("confirm-msg").textContent=msg;
-  document.getElementById("confirm-dialog").style.display="flex";
+let confirmCallback = null;
+function showConfirm(msg, fn) {
+  confirmCallback = fn;
+  document.getElementById("confirm-msg").textContent = msg;
+  document.getElementById("confirm-dialog").style.display = "flex";
 }
-function confirmOk(){
-  document.getElementById("confirm-dialog").style.display="none";
-  if(confirmCallback)confirmCallback();
-}
-function confirmCancel(){
-  document.getElementById("confirm-dialog").style.display="none";
-  confirmCallback=null;
+function confirmOk() { document.getElementById("confirm-dialog").style.display = "none"; if (confirmCallback) confirmCallback(); }
+function confirmCancel() { document.getElementById("confirm-dialog").style.display = "none"; confirmCallback = null; }
+
+function clearLocal() {
+  localStorage.removeItem("roomCode"); localStorage.removeItem("isAdmin"); localStorage.removeItem("myName");
+  roomCode = ""; myName = "";
 }
 
-function clearLocal(){
-  localStorage.removeItem("roomCode");localStorage.removeItem("isAdmin");localStorage.removeItem("myName");
-  roomCode="";myName="";
-}
-
-async function leaveRoom(){
-  showConfirm("退出しますか？", async()=>{
+async function leaveRoom() {
+  showConfirm("退出しますか？", async () => {
     stopPoll();
-    if(roomCode&&myId)await dbSet(`rooms/${roomCode}/participants/${myId}/status`,"kicked");
-    clearLocal();show("s-home");
+    if (roomCode && myId) await dbSet(`rooms/${roomCode}/participants/${myId}/status`, "kicked");
+    clearLocal(); show("s-home");
   });
 }
 
-async function exitRoom(){
-  showConfirm("ルームを終了しますか？", async()=>{
+async function exitRoom() {
+  showConfirm("ルームを終了しますか？", async () => {
     stopPoll();
-    await dbSet(`rooms/${roomCode}`,null);
-    clearLocal();show("s-home");
+    await dbSet(`rooms/${roomCode}`, null);
+    clearLocal(); show("s-home");
   });
 }
 
-async function approveAll(){
-  const room=await dbGet(`rooms/${roomCode}`);
-  for(const p of Object.values(room.participants||{}).filter(p=>p.status==="waiting"))
-    await dbSet(`rooms/${roomCode}/participants/${p.id}/status`,"approved");
+async function approveAll() {
+  const room = await dbGet(`rooms/${roomCode}`);
+  for (const p of Object.values(room.participants || {}).filter(p => p.status === "waiting"))
+    await dbSet(`rooms/${roomCode}/participants/${p.id}/status`, "approved");
 }
-async function approveUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"approved");}
-async function kickUser(id){await dbSet(`rooms/${roomCode}/participants/${id}/status`,"kicked");}
-async function addLate(id){
+async function approveUser(id) { await dbSet(`rooms/${roomCode}/participants/${id}/status`, "approved"); }
+async function kickUser(id) { await dbSet(`rooms/${roomCode}/participants/${id}/status`, "kicked"); }
+
+async function addLate(id) {
   const room = await dbGet(`rooms/${roomCode}`);
   const participant = room.participants[id];
-  if(!participant) return;
-  const teams = room.teams || {};
-  const entries = Object.entries(teams);
-  if(entries.length === 0) return;
-
+  if (!participant) return;
+  const entries = Object.entries(room.teams || {});
+  if (!entries.length) return;
   let candidates = entries;
-  if(room.gameMode === "separate"){
-    candidates = entries.filter(([k,t])=>{
-      return t.gender === participant.gender;
-    });
-  }
-
-  if(candidates.length === 0){
-    alert("追加できるチームがありません");
-    return;
-  }
-
-  candidates.sort((a,b)=>{
-    const aCount = Object.keys(a[1].members || {}).length;
-    const bCount = Object.keys(b[1].members || {}).length;
-    return aCount - bCount;
-  });
-
-  const [targetKey,targetTeam] = candidates[0];
-  const updatedMembers = {
-    ...(targetTeam.members || {}),
-    [participant.id]: {
-      ...participant,
-      lateJoin: true
-    }
-  };
-
-  await dbSet(`rooms/${roomCode}/teams/${targetKey}/members`, updatedMembers);
+  if (gameMode === "separate") candidates = entries.filter(([k,t]) => t.gender === participant.gender);
+  if (gameMode === "level") candidates = entries.filter(([k,t]) => t.level === participant.level);
+  if (!candidates.length) { alert("追加できるチームがありません"); return; }
+  candidates.sort((a,b) => Object.keys(a[1].members||{}).length - Object.keys(b[1].members||{}).length);
+  const [targetKey, targetTeam] = candidates[0];
+  await dbSet(`rooms/${roomCode}/teams/${targetKey}/members`, {...(targetTeam.members||{}), [participant.id]: {...participant, lateJoin:true}});
   await dbSet(`rooms/${roomCode}/participants/${id}/status`, "approved");
   alert(`チーム ${tNum(targetKey)} に追加しました`);
 }
 
-async function init(){
-  if(!roomCode){show("s-home");return;}
-  const room=await dbGet(`rooms/${roomCode}`);
-  if(!room){clearLocal();show("s-home");return;}
-  if(isAdminSession){startAdminPoll();show("s-admin");}
-  else{
-    const me=room.participants?.[myId];
-    if(!me){clearLocal();show("s-home");return;}
-    if(me.status==="approved"){renderParticipant(room);show("s-participant");startParticipantPoll();}
-    else if(me.status==="waiting"){
-      document.getElementById("w-code").textContent=roomCode;
-      document.getElementById("w-name").textContent=myName;
-      show("s-waiting");startWaitingPoll();
-    } else {clearLocal();show("s-home");}
+async function init() {
+  if (!roomCode) { show("s-home"); return; }
+  const room = await dbGet(`rooms/${roomCode}`);
+  if (!room) { clearLocal(); show("s-home"); return; }
+  if (isAdminSession) { startAdminPoll(); show("s-admin"); }
+  else {
+    const me = room.participants?.[myId];
+    if (!me) { clearLocal(); show("s-home"); return; }
+    if (me.status === "approved") { renderParticipant(room); show("s-participant"); startParticipantPoll(); }
+    else if (me.status === "waiting") {
+      document.getElementById("w-code").textContent = roomCode;
+      document.getElementById("w-name").textContent = myName;
+      show("s-waiting"); startWaitingPoll();
+    } else { clearLocal(); show("s-home"); }
   }
 }
 init();
 </script>
+
+<!-- 確認ダイアログ -->
 <div id="confirm-dialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center">
   <div style="background:white;border-radius:1.25rem;padding:1.5rem;margin:1rem;max-width:300px;width:100%">
     <p id="confirm-msg" style="font-size:.95rem;font-weight:600;color:#1f2937;margin-bottom:1.25rem;text-align:center"></p>
