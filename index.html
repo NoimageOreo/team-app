@@ -63,7 +63,7 @@ input:focus{border-color:#4f46e5}
 .t-btn.warning { background: #f59e0b; color: #fff;}
 </style>
 </head>
-<body>
+<body style = "display:none">
 
 <div id="s-home" style="display:none;min-height:100vh;background:linear-gradient(135deg,#3730a3,#7c3aed);align-items:center;justify-content:center;padding:1rem">
   <div style="background:white;border-radius:1.5rem;padding:2rem;width:100%;max-width:360px;box-shadow:0 20px 40px rgba(0,0,0,.3)">
@@ -277,6 +277,37 @@ input:focus{border-color:#4f46e5}
 </div>
 
 <script>
+
+const ALLOWED_IP_PREFIX = "133.78."; // 第一・第二オクテットを入力
+
+async function checkCampusNetwork() {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    const userIP = data.ip;
+    if (!userIP.startsWith(ALLOWED_IP_PREFIX)) {
+      document.body.innerHTML = `
+        <div style="display:flex;height:100vh;align-items:center;justify-content:center;background:#fef2f2;padding:2rem;text-align:center;">
+          <div>
+            <h1 style="font-size:3rem;margin-bottom:1rem;">📡</h1>
+            <h2 style="color:#dc2626;font-size:1.5rem;margin-bottom:1rem;">学外ネットワークからのアクセス</h2>
+            <p style="color:#7f1d1d;font-size:1rem;line-height:1.5;">
+              このアプリは学内のWi-Fiに接続している場合のみ利用可能です。<br>
+              スマートフォンのWi-Fi設定を確認してください。
+            </p>
+            <p style="color:#fca5a5;font-size:0.8rem;margin-top:2rem;">現在のIP: ${userIP}</p>
+          </div>
+        </div>`;
+    } else {
+      document.body.style.display = "block";
+    }
+  } catch (error) {
+    // APIが落ちていた場合はとりあえず通す
+    document.body.style.display = "block";
+  }
+}
+checkCampusNetwork();
+
 const ADMIN_PASSWORD = "donut"; // 好きなパスワードに変更してください
 
 function accessAdmin() {
