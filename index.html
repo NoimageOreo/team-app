@@ -72,7 +72,6 @@ input:focus{border-color:#4f46e5}
       <button class="tgl on-blue" id="g-male" onclick="selectGender('male')">👦 男子</button>
       <button class="tgl" id="g-female" onclick="selectGender('female')">👧 女子</button>
     </div>
-    <!-- レベル選択（参加者タブのみ表示） -->
     <div id="level-select" style="display:none">
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.5rem;margin-top:.25rem">レベル</p>
       <div class="tgl-grp">
@@ -186,12 +185,25 @@ input:focus{border-color:#4f46e5}
       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;font-weight:700;color:#374151">
         <div style="width:8px;height:8px;border-radius:50%;background:#4f46e5"></div>チーム設定
       </div>
+
+      <!-- ▼ 変更①: 試合モードを2択に -->
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem">試合モード</p>
-      <div class="tgl-grp" style="margin-bottom:1rem">
+      <div class="tgl-grp" style="margin-bottom:.75rem">
         <button class="tgl on" id="mode-mixed" onclick="setGameMode('mixed')">🔀 混合</button>
         <button class="tgl" id="mode-sep" onclick="setGameMode('separate')">⚥ 男女別</button>
-        <button class="tgl" id="mode-level" onclick="setGameMode('level')">🔥 ガチ/エンジョイ別</button>
       </div>
+
+      <!-- ▼ 変更②: ガチ/エンジョイ分けオプション（独立トグル） -->
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;background:#fdf4ff;border-radius:.75rem;padding:.75rem 1rem;border:1px solid #e9d5ff">
+        <div style="flex:1">
+          <span style="font-size:.85rem;color:#374151;font-weight:600">🔥😊 ガチ/エンジョイでも分ける</span>
+          <div style="font-size:.72rem;color:#9ca3af;margin-top:.15rem">ONにするとガチとエンジョイが別チームになります</div>
+        </div>
+        <div onclick="toggleSplitLevel()" id="split-level-bg" style="position:relative;width:44px;height:24px;background:#d1d5db;border-radius:24px;cursor:pointer;flex-shrink:0;transition:.3s">
+          <div id="split-level-knob" style="position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:3px;left:3px;transition:.3s"></div>
+        </div>
+      </div>
+
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem">使用コート数</p>
       <div class="tgl-grp" style="margin-bottom:1rem">
         <button class="tgl" id="court-1" onclick="setCourtNum(1)">1コート（全体）</button>
@@ -219,7 +231,6 @@ input:focus{border-color:#4f46e5}
         <div style="width:8px;height:8px;border-radius:50%;background:#10b981"></div>
         <span id="a-approved-title">承認済み参加者</span>
       </div>
-      <!-- スマホなし参加者追加 -->
       <div class="card">
         <div style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:1rem">➕ スマホなし参加者を追加</div>
         <input id="manual-name" type="text" placeholder="名前"/>
@@ -318,11 +329,12 @@ let myGender = localStorage.getItem("myGender") || "male";
 let myLevel = localStorage.getItem("myLevel") || "gachi";
 let isAdminSession = localStorage.getItem("isAdmin") === "true";
 let pollTimer = null, currentTab = "create";
+// ▼ 変更③: gameMode は "mixed"/"separate" のみ、splitLevel を独立変数に
 let adminJoin = true, divMode = "count", gameMode = "mixed", courtNum = 2;
+let splitLevel = false; // ガチ/エンジョイでも分けるか
 let timerState = { endTime: null, duration: 300000, baseDuration: 300000, isRunning: false };
 setInterval(updateTimerUI, 100);
 
-// スマホなし追加用
 let manualGender = "male";
 let manualLevel = "gachi";
 
@@ -378,7 +390,6 @@ function setManualLevel(l) {
 
 function showErr(msg) { const e = document.getElementById("h-err"); e.textContent = msg; e.style.display = msg ? "block" : "none"; }
 
-// ===== スマホなし参加者追加 =====
 async function addManualPlayer() {
   const name = document.getElementById("manual-name").value.trim();
   if (!name) { alert("名前を入力してください"); return; }
@@ -401,9 +412,11 @@ async function homeAction() {
     const pw = prompt("管理者パスワードを入力してください");
     if (pw !== ADMIN_PASSWORD) return showErr("パスワードが違います");
     const code = genCode();
+    // ▼ 変更④: DB初期値に splitLevel を追加
     await dbSet(`rooms/${code}`, {
       adminId: myId, adminName: name, teamSize: 5,
       gameMode: "mixed", courtNum: 2, divMode: "count", adminJoin: true,
+      splitLevel: false,
       participants: {}, teams: {}, gameStarted: false,
       timer: { endTime: null, duration: 300000, baseDuration: 300000, isRunning: false }
     });
@@ -494,10 +507,7 @@ function renderParticipant(room) {
 
     document.getElementById("p-all").innerHTML = teamKeys.map(k => {
       const t = teams[k]; const col = tCol(k); const ms = Object.values(t.members || {});
-      const tag = t.level === 'gachi' ? '<span style="font-size:.7rem;color:#ef4444">🔥ガチ</span>'
-                : t.level === 'enjoy' ? '<span style="font-size:.7rem;color:#10b981">😊エンジョイ</span>'
-                : t.gender === 'male' ? '<span style="font-size:.7rem;color:#3b82f6">👦男子</span>'
-                : t.gender === 'female' ? '<span style="font-size:.7rem;color:#ec4899">👧女子</span>' : '';
+      const tag = makeTeamTag(t);
       return `<div style="margin-bottom:.75rem">
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
           <span style="background:${col.bg};color:white;font-size:.75rem;font-weight:700;padding:.2rem .75rem;border-radius:9999px">チーム ${tNum(k)}</span>
@@ -512,6 +522,16 @@ function renderParticipant(room) {
     document.getElementById("p-all-card").style.display = "block";
   }
   syncTimerFromDB(room);
+}
+
+// ▼ 変更⑤: チームタグ生成をまとめた関数（gender/level両方表示対応）
+function makeTeamTag(t) {
+  const parts = [];
+  if (t.gender === 'male') parts.push('<span style="font-size:.75rem;color:#3b82f6">👦男子</span>');
+  else if (t.gender === 'female') parts.push('<span style="font-size:.75rem;color:#ec4899">👧女子</span>');
+  if (t.level === 'gachi') parts.push('<span style="font-size:.75rem;color:#ef4444">🔥ガチ</span>');
+  else if (t.level === 'enjoy') parts.push('<span style="font-size:.75rem;color:#10b981">😊エンジョイ</span>');
+  return parts.join('');
 }
 
 // ===== 試合表示 =====
@@ -603,13 +623,22 @@ async function resetTimer() {
 }
 
 // ===== 設定変更 =====
+// ▼ 変更⑥: setGameMode から "level" を削除
 async function setGameMode(mode) {
   gameMode = mode;
   if (roomCode) await dbSet(`rooms/${roomCode}/gameMode`, mode);
   document.getElementById("mode-mixed").className = "tgl" + (mode==="mixed" ? " on" : "");
   document.getElementById("mode-sep").className = "tgl" + (mode==="separate" ? " on" : "");
-  document.getElementById("mode-level").className = "tgl" + (mode==="level" ? " on" : "");
 }
+
+// ▼ 変更⑦: splitLevel トグル関数を追加
+async function toggleSplitLevel() {
+  splitLevel = !splitLevel;
+  if (roomCode) await dbSet(`rooms/${roomCode}/splitLevel`, splitLevel);
+  document.getElementById("split-level-bg").style.background = splitLevel ? "#8b5cf6" : "#d1d5db";
+  document.getElementById("split-level-knob").style.left = splitLevel ? "23px" : "3px";
+}
+
 async function setCourtNum(num) {
   courtNum = num;
   if (roomCode) await dbSet(`rooms/${roomCode}/courtNum`, num);
@@ -645,15 +674,16 @@ function startAdminPoll() {
   startPoll(async () => { const room = await dbGet(`rooms/${roomCode}`); if (room) renderAdmin(room); });
 }
 
+// ▼ 変更⑧: renderAdmin で splitLevel の読み込み・UI同期・プレビューを更新
 function renderAdmin(room) {
   gameMode = room.gameMode || "mixed";
   courtNum = room.courtNum || 2;
   divMode = room.divMode || "count";
   adminJoin = room.adminJoin !== false;
+  splitLevel = room.splitLevel === true;
 
   document.getElementById("mode-mixed").className = "tgl" + (gameMode==="mixed" ? " on" : "");
   document.getElementById("mode-sep").className = "tgl" + (gameMode==="separate" ? " on" : "");
-  document.getElementById("mode-level").className = "tgl" + (gameMode==="level" ? " on" : "");
   document.getElementById("court-1").className = "tgl" + (courtNum===1 ? " on" : "");
   document.getElementById("court-2").className = "tgl" + (courtNum===2 ? " on" : "");
   document.getElementById("dc-btn").style.background = divMode==="count" ? "#4f46e5" : "white";
@@ -664,6 +694,9 @@ function renderAdmin(room) {
   document.querySelectorAll(".szbtn").forEach(b => b.classList.toggle("on", parseInt(b.textContent) === room.teamSize));
   document.getElementById("toggle-bg").style.background = adminJoin ? "#4f46e5" : "#d1d5db";
   document.getElementById("toggle-knob").style.left = adminJoin ? "23px" : "3px";
+  // splitLevel トグルUI同期
+  document.getElementById("split-level-bg").style.background = splitLevel ? "#8b5cf6" : "#d1d5db";
+  document.getElementById("split-level-knob").style.left = splitLevel ? "23px" : "3px";
 
   const parts = Object.values(room.participants || {});
   const waiting = parts.filter(p => p.status === "waiting");
@@ -682,10 +715,10 @@ function renderAdmin(room) {
   const totalCount = adminJoin ? approved.length + 1 : approved.length;
 
   document.getElementById("a-code").textContent = roomCode;
-  document.getElementById("a-stats").textContent =
-    gameMode === "level"
-      ? `承認済み: ${approved.length}人 🔥${approved.filter(p=>p.level==='gachi').length} 😊${approved.filter(p=>p.level==='enjoy').length} 申請中: ${waiting.length}人`
-      : `承認済み: ${approved.length}人 👦${approved.filter(p=>p.gender==='male').length} 👧${approved.filter(p=>p.gender==='female').length} 申請中: ${waiting.length}人`;
+  // stats: splitLevel ON なら性別＋レベルを両方表示
+  document.getElementById("a-stats").textContent = splitLevel
+    ? `承認済み: ${approved.length}人 👦${approved.filter(p=>p.gender==='male').length} 👧${approved.filter(p=>p.gender==='female').length} 🔥${approved.filter(p=>p.level==='gachi').length} 😊${approved.filter(p=>p.level==='enjoy').length} 申請中: ${waiting.length}人`
+    : `承認済み: ${approved.length}人 👦${approved.filter(p=>p.gender==='male').length} 👧${approved.filter(p=>p.gender==='female').length} 申請中: ${waiting.length}人`;
   document.getElementById("a-badge").textContent = room.gameStarted ? "🏃 試合中" : "⏳ 待機中";
   document.getElementById("a-badge").style.background = room.gameStarted ? "#10b981" : "#4f46e5";
 
@@ -706,18 +739,25 @@ function renderAdmin(room) {
     document.getElementById("a-req-sec").style.display = "none";
   }
 
-  // プレビュー
+  // ▼ プレビュー（splitLevel × gameMode の4パターン）
+  const sz = room.teamSize || 5;
+  const calcT = (n) => divMode==="count"
+    ? Math.ceil(n / Math.max(sz, 1))
+    : Math.max(n > 0 ? 1 : 0, Math.round(sz * n / Math.max(totalCount, 1)));
   let prev = "";
-  if (gameMode === "separate") {
-    const mT = divMode==="count" ? Math.ceil(maleCount/Math.max(room.teamSize,1)) : Math.round((room.teamSize||4)*maleCount/Math.max(totalCount,1));
-    const fT = divMode==="count" ? Math.ceil(femaleCount/Math.max(room.teamSize,1)) : Math.max(0,(room.teamSize||4)-mT);
-    prev = `👦男子 ${maleCount}人 → 約${mT}チーム　👧女子 ${femaleCount}人 → 約${fT}チーム`;
-  } else if (gameMode === "level") {
-    const gT = divMode==="count" ? Math.ceil(gachiCount/Math.max(room.teamSize,1)) : Math.round((room.teamSize||4)*gachiCount/Math.max(totalCount,1));
-    const eT = divMode==="count" ? Math.ceil(enjoyCount/Math.max(room.teamSize,1)) : Math.max(0,(room.teamSize||4)-gT);
-    prev = `🔥ガチ ${gachiCount}人 → 約${gT}チーム　😊エンジョイ ${enjoyCount}人 → 約${eT}チーム`;
+  if (splitLevel) {
+    if (gameMode === "separate") {
+      const mgG = approved.filter(p=>p.gender==='male'&&p.level==='gachi').length + (adminJoin&&myGender==='male'&&myLevel==='gachi'?1:0);
+      const mgE = approved.filter(p=>p.gender==='male'&&p.level==='enjoy').length + (adminJoin&&myGender==='male'&&myLevel==='enjoy'?1:0);
+      const fgG = approved.filter(p=>p.gender==='female'&&p.level==='gachi').length + (adminJoin&&myGender==='female'&&myLevel==='gachi'?1:0);
+      const fgE = approved.filter(p=>p.gender==='female'&&p.level==='enjoy').length + (adminJoin&&myGender==='female'&&myLevel==='enjoy'?1:0);
+      prev = `👦🔥 ${mgG}人→${calcT(mgG)}チーム　👦😊 ${mgE}人→${calcT(mgE)}チーム<br>👧🔥 ${fgG}人→${calcT(fgG)}チーム　👧😊 ${fgE}人→${calcT(fgE)}チーム`;
+    } else {
+      prev = `🔥ガチ ${gachiCount}人 → 約${calcT(gachiCount)}チーム　😊エンジョイ ${enjoyCount}人 → 約${calcT(enjoyCount)}チーム`;
+    }
+  } else if (gameMode === "separate") {
+    prev = `👦男子 ${maleCount}人 → 約${calcT(maleCount)}チーム　👧女子 ${femaleCount}人 → 約${calcT(femaleCount)}チーム`;
   } else {
-    const sz = room.teamSize || 5;
     prev = divMode==="count"
       ? `参加 <strong>${totalCount}人</strong> ÷ <strong>${sz}人</strong> = 約 <strong>${Math.ceil(totalCount/sz)}チーム</strong>${totalCount%sz ? ` <span style="font-size:.75rem;color:#818cf8">（最終${totalCount%sz}人）</span>` : ""}`
       : `参加 <strong>${totalCount}人</strong> → <strong>${sz}チーム</strong>（各約${Math.floor(totalCount/sz)}〜${Math.ceil(totalCount/sz)}人）`;
@@ -754,11 +794,7 @@ function renderAdmin(room) {
     document.getElementById("a-teams-sec").style.display = "block";
     document.getElementById("a-teams-list").innerHTML = teamKeys.map(k => {
       const t = room.teams[k]; const col = tCol(k); const ms = Object.values(t.members || {});
-      const tag = t.level === 'gachi' ? '<span style="font-size:.75rem;color:#ef4444">🔥ガチ</span>'
-                : t.level === 'enjoy' ? '<span style="font-size:.75rem;color:#10b981">😊エンジョイ</span>'
-                : t.gender === 'male' ? '<span style="font-size:.75rem;color:#3b82f6">👦男子</span>'
-                : t.gender === 'female' ? '<span style="font-size:.75rem;color:#ec4899">👧女子</span>'
-                : '<span style="font-size:.75rem;color:#6b7280">混合</span>';
+      const tag = makeTeamTag(t);
       return `<div style="background:${col.light};border:2px solid ${col.border};border-radius:.75rem;padding:.75rem 1rem;margin-bottom:.75rem">
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
           <span style="background:${col.bg};color:white;font-size:.8rem;font-weight:800;padding:.25rem .75rem;border-radius:9999px">チーム ${tNum(k)}</span>
@@ -800,6 +836,7 @@ function renderAdmin(room) {
 }
 
 // ===== シャッフル =====
+// ▼ 変更⑨: doShuffle を splitLevel × gameMode の4パターンに対応
 async function doShuffle() {
   const room = await dbGet(`rooms/${roomCode}`);
   const base = Object.values(room.participants || {}).filter(p => p.status === "approved");
@@ -809,21 +846,46 @@ async function doShuffle() {
   const sz = room.teamSize || 5;
   let teams = {}, ti = 0;
 
-  if (gameMode === "level") {
-    // ガチ/エンジョイ別
-    const gachi = [...all.filter(p => p.level === 'gachi')].sort(() => Math.random() - .5);
-    const enjoy = [...all.filter(p => p.level === 'enjoy')].sort(() => Math.random() - .5);
-    if (divMode === "count") {
-      for (let i = 0; i < gachi.length; i += sz) { const chunk = gachi.slice(i,i+sz); const mem = {}; chunk.forEach(m => mem[m.id]=m); teams[`team${ti}`]={id:`team${ti}`,members:mem,level:'gachi'}; ti++; }
-      for (let i = 0; i < enjoy.length; i += sz) { const chunk = enjoy.slice(i,i+sz); const mem = {}; chunk.forEach(m => mem[m.id]=m); teams[`team${ti}`]={id:`team${ti}`,members:mem,level:'enjoy'}; ti++; }
-    } else {
-      const gT = Math.max(gachi.length>0?1:0, Math.round(sz*gachi.length/Math.max(all.length,1)));
-      const eT = Math.max(enjoy.length>0?1:0, sz-gT);
-      if (gT > 0) { for (let i=0;i<gT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},level:'gachi'};ti++;} gachi.forEach((m,i)=>{teams[`team${i%gT}`].members[m.id]=m;}); }
-      if (eT > 0) { const es=ti; for (let i=0;i<eT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},level:'enjoy'};ti++;} enjoy.forEach((m,i)=>{teams[`team${es+i%eT}`].members[m.id]=m;}); }
+  if (splitLevel) {
+    // グループ定義: mixed→ガチ/エンジョイ 2グループ、separate→男ガチ/男エンジョイ/女ガチ/女エンジョイ 4グループ
+    const rawGroups = gameMode === "separate"
+      ? [
+          { gender:'male',   level:'gachi', key:'male-gachi'   },
+          { gender:'male',   level:'enjoy', key:'male-enjoy'   },
+          { gender:'female', level:'gachi', key:'female-gachi' },
+          { gender:'female', level:'enjoy', key:'female-enjoy' },
+        ]
+      : [
+          { level:'gachi', key:'gachi' },
+          { level:'enjoy', key:'enjoy' },
+        ];
+
+    for (const grp of rawGroups) {
+      const members = all.filter(p =>
+        (grp.gender ? p.gender === grp.gender : true) && p.level === grp.level
+      ).sort(() => Math.random() - .5);
+      if (members.length === 0) continue;
+
+      if (divMode === "count") {
+        for (let i = 0; i < members.length; i += sz) {
+          const chunk = members.slice(i, i + sz);
+          const mem = {}; chunk.forEach(m => mem[m.id] = m);
+          teams[`team${ti}`] = { id:`team${ti}`, members:mem, gender:grp.gender||null, level:grp.level, group:grp.key };
+          ti++;
+        }
+      } else {
+        const tCount = Math.max(1, Math.round(sz * members.length / Math.max(all.length, 1)));
+        const start = ti;
+        for (let i = 0; i < tCount; i++) {
+          teams[`team${ti}`] = { id:`team${ti}`, members:{}, gender:grp.gender||null, level:grp.level, group:grp.key };
+          ti++;
+        }
+        members.forEach((m, i) => { teams[`team${start + i % tCount}`].members[m.id] = m; });
+      }
     }
+
   } else if (gameMode === "separate") {
-    // 男女別
+    // 男女別（splitLevel OFF）
     const males = [...all.filter(p => p.gender==='male')].sort(() => Math.random()-.5);
     const females = [...all.filter(p => p.gender==='female')].sort(() => Math.random()-.5);
     if (divMode === "count") {
@@ -837,7 +899,7 @@ async function doShuffle() {
       if(fT>0){const fs=ti;for(let i=0;i<fT;i++){teams[`team${ti}`]={id:`team${ti}`,members:{},gender:'female'};ti++;}females.forEach((m,i)=>{teams[`team${fs+i%fT}`].members[m.id]=m;});}
     }
   } else {
-    // 混合
+    // 混合（splitLevel OFF）
     const males = [...all.filter(p => p.gender==='male')].sort(() => Math.random()-.5);
     const females = [...all.filter(p => p.gender==='female')].sort(() => Math.random()-.5);
     const tCount = divMode==="count" ? Math.ceil(all.length/sz) : sz;
@@ -855,17 +917,22 @@ async function doShuffle() {
 }
 
 // ===== コート・スケジュール生成 =====
+// ▼ 変更⑩: buildCourts を splitLevel 対応に
 function buildCourts(teams) {
   const keys = Object.keys(teams);
 
-  // ガチ/エンジョイ別モード：独立した総当たりを各コートで
-  if (gameMode === "level") {
-    const gachiKeys = keys.filter(k => teams[k].level === 'gachi');
-    const enjoyKeys = keys.filter(k => teams[k].level === 'enjoy');
+  // splitLevel ON: グループ別に総当たりを生成してコートに割り振る
+  if (splitLevel) {
+    const groupMap = {};
+    keys.forEach(k => {
+      const g = teams[k].group || 'default';
+      if (!groupMap[g]) groupMap[g] = [];
+      groupMap[g].push(k);
+    });
 
-    function makeMatchList(groupKeys) {
-      if (groupKeys.length < 2) return [];
-      let rot = [...groupKeys];
+    function makeMatchList(gKeys) {
+      if (gKeys.length < 2) return [];
+      let rot = [...gKeys];
       if (rot.length % 2 !== 0) rot.push("BYE");
       const rounds = rot.length - 1, half = rot.length / 2;
       const pairs = [];
@@ -876,38 +943,41 @@ function buildCourts(teams) {
         }
         const fixed = rot[0]; const rest = rot.slice(1); rest.unshift(rest.pop()); rot = [fixed, ...rest];
       }
-      const rc = {}; groupKeys.forEach(k => rc[k] = 0);
+      const rc = {}; gKeys.forEach(k => rc[k] = 0);
       return pairs.map((m, i) => {
-        const avail = groupKeys.filter(k => k!==m.t1&&k!==m.t2).sort((a,b) => rc[a]-rc[b]||Math.random()-.5);
-        const ref = avail[0] || null;
+        const avail = gKeys.filter(k=>k!==m.t1&&k!==m.t2).sort((a,b)=>rc[a]-rc[b]||Math.random()-.5);
+        const ref = avail[0]||null;
         if (ref) rc[ref]++;
         return {...m, ref, num:i+1, displayNum:i+1, slotIndex:i};
       });
     }
 
-    if (courtNum === 2 && gachiKeys.length >= 2 && enjoyKeys.length >= 2) {
+    const groupEntries = Object.entries(groupMap).filter(([,gk]) => gk.length >= 2);
+    if (groupEntries.length === 0) return { court1: { teamKeys: keys, matches: [] }, court2: null };
+
+    if (courtNum === 2 && groupEntries.length >= 2) {
+      const mid = Math.ceil(groupEntries.length / 2);
+      const c1Keys = groupEntries.slice(0, mid).flatMap(([,gk]) => gk);
+      const c2Keys = groupEntries.slice(mid).flatMap(([,gk]) => gk);
+      const c1Raw = groupEntries.slice(0, mid).flatMap(([,gk]) => makeMatchList(gk));
+      const c2Raw = groupEntries.slice(mid).flatMap(([,gk]) => makeMatchList(gk));
       return {
-        court1: { teamKeys: gachiKeys, matches: makeMatchList(gachiKeys) },
-        court2: { teamKeys: enjoyKeys, matches: makeMatchList(enjoyKeys) }
+        court1: { teamKeys: c1Keys, matches: c1Raw.map((m,i)=>({...m,displayNum:i+1,slotIndex:i})) },
+        court2: { teamKeys: c2Keys, matches: c2Raw.map((m,i)=>({...m,displayNum:i+1,slotIndex:i})) }
       };
     }
-    // 片方しかいない場合
-    const dominant = gachiKeys.length >= enjoyKeys.length ? gachiKeys : enjoyKeys;
-    if (courtNum === 2 && dominant.length >= 4) {
-      const mid = Math.ceil(dominant.length / 2);
-      return {
-        court1: { teamKeys: dominant.slice(0,mid), matches: makeMatchList(dominant.slice(0,mid)) },
-        court2: { teamKeys: dominant.slice(mid), matches: makeMatchList(dominant.slice(mid)) }
-      };
+
+    // 1コート or グループが1つ: インターリーブ
+    const groupMatches = groupEntries.map(([,gk]) => makeMatchList(gk));
+    const merged = [];
+    const maxLen = Math.max(...groupMatches.map(g=>g.length));
+    for (let i = 0; i < maxLen; i++) {
+      groupMatches.forEach(gm => { if (i < gm.length) merged.push(gm[i]); });
     }
-    // 1コート：ガチ→エンジョイの順で交互
-    const gM = makeMatchList(gachiKeys), eM = makeMatchList(enjoyKeys);
-    const merged = []; let gi=0, ei=0;
-    while (gi<gM.length||ei<eM.length) { if(gi<gM.length)merged.push(gM[gi++]); if(ei<eM.length)merged.push(eM[ei++]); }
-    return { court1: { teamKeys: keys, matches: merged.map((m,i)=>({...m,num:i+1,displayNum:i+1,slotIndex:i})) }, court2: null };
+    return { court1: { teamKeys: keys, matches: merged.map((m,i)=>({...m,displayNum:i+1,slotIndex:i})) }, court2: null };
   }
 
-  // 既存の男女別・混合モード処理
+  // splitLevel OFF: 既存ロジック（男女別・混合）
   function createRoundRobin(teamKeys) {
     if (teamKeys.length <= 1) return [];
     let rotation = [...teamKeys];
@@ -1025,6 +1095,7 @@ async function approveAll() {
 async function approveUser(id) { await dbSet(`rooms/${roomCode}/participants/${id}/status`, "approved"); }
 async function kickUser(id) { await dbSet(`rooms/${roomCode}/participants/${id}/status`, "kicked"); }
 
+// ▼ addLate も splitLevel に対応
 async function addLate(id) {
   const room = await dbGet(`rooms/${roomCode}`);
   const participant = room.participants[id];
@@ -1032,8 +1103,15 @@ async function addLate(id) {
   const entries = Object.entries(room.teams || {});
   if (!entries.length) return;
   let candidates = entries;
-  if (gameMode === "separate") candidates = entries.filter(([k,t]) => t.gender === participant.gender);
-  if (gameMode === "level") candidates = entries.filter(([k,t]) => t.level === participant.level);
+  if (splitLevel) {
+    if (gameMode === "separate") {
+      candidates = entries.filter(([,t]) => t.gender === participant.gender && t.level === participant.level);
+    } else {
+      candidates = entries.filter(([,t]) => t.level === participant.level);
+    }
+  } else if (gameMode === "separate") {
+    candidates = entries.filter(([,t]) => t.gender === participant.gender);
+  }
   if (!candidates.length) { alert("追加できるチームがありません"); return; }
   candidates.sort((a,b) => Object.keys(a[1].members||{}).length - Object.keys(b[1].members||{}).length);
   const [targetKey, targetTeam] = candidates[0];
