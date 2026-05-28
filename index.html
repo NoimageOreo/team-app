@@ -72,7 +72,7 @@ input:focus{border-color:#4f46e5}
       <button class="tgl on-blue" id="g-male" onclick="selectGender('male')">👦 男子</button>
       <button class="tgl" id="g-female" onclick="selectGender('female')">👧 女子</button>
     </div>
-    <div id="level-select" style="display:none">
+    <div id="level-select" style="display:block">
       <p style="font-size:.8rem;color:#6b7280;margin-bottom:.5rem;margin-top:.25rem">レベル</p>
       <div class="tgl-grp">
         <button class="tgl" id="l-enjoy" onclick="selectLevel('enjoy')">😊 エンジョイ</button>
@@ -354,7 +354,7 @@ function switchTab(btn) {
   currentTab = btn.dataset.tab;
   const isJoin = currentTab === "join";
   document.getElementById("join-fields").style.display = isJoin ? "block" : "none";
-  document.getElementById("level-select").style.display = isJoin ? "block" : "none";
+  document.getElementById("level-select").style.display = "block";
   document.getElementById("h-btn").textContent = isJoin ? "入室申請する" : "ルームを作成する";
   document.getElementById("h-btn").className = "btn " + (isJoin ? "btn-green" : "btn-indigo");
   document.getElementById("h-err").style.display = "none";
