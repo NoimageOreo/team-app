@@ -286,6 +286,7 @@ async function checkCampusNetwork() {
     const data = await res.json();
     const userIP = data.ip;
     if (!userIP.startsWith(ALLOWED_IP_PREFIX)) {
+      document.body.style.display = "block";
       document.body.innerHTML = `
         <div style="display:flex;height:100vh;align-items:center;justify-content:center;background:#fef2f2;padding:2rem;text-align:center;">
           <div>
