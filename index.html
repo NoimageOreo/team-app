@@ -1054,15 +1054,13 @@ function buildCourts(teams) {
 
   slots.forEach((slot, slotIndex) => {
     const busy = new Set(); slot.forEach(m => { busy.add(m.t1); busy.add(m.t2); });
+    // ▼ 審判はスロット単位で1チーム（両コート共通）
+    const cands = keys.filter(k => !busy.has(k)).sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5);
+    const slotRef = cands[0] || null;
+    if (slotRef) refCount[slotRef]++;
     slot.forEach((match, idx) => {
       match.slotIndex = slotIndex;
-      let cands = keys.filter(k => !busy.has(k));
-      if (gameMode === "separate" && cands.length > 0) {
-        const mg = teams[match.t1]?.gender;
-        const sg = cands.filter(k => teams[k].gender === mg);
-        if (sg.length > 0) cands = sg;
-      }
-      if (cands.length > 0) { cands.sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5); match.ref = cands[0]; refCount[cands[0]]++; } else { match.ref = null; }
+      match.ref = slotRef;
       if (courtNum === 1) { match.displayNum = court1.length+1; court1.push(match); }
       else { if (idx===0) { match.displayNum = court1.length+1; court1.push(match); } else { match.displayNum = court2.length+1; court2.push(match); } }
     });
