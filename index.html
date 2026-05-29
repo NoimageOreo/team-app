@@ -974,8 +974,8 @@ function buildCourts(teams) {
         const cands = keys.filter(k => !busy.has(k)).sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5);
         const ref = cands[0] || null;
         if (ref) refCount[ref]++;
-        if (m1) c1Matches.push({...m1, ref, slotIndex:s, displayNum:c1Matches.length+1});
-        if (m2) c2Matches.push({...m2, ref, slotIndex:s, displayNum:c2Matches.length+1});
+        if (m1) c1Matches.push({...m1, ref, slotIndex:s, displayNum:s+1});
+        if (m2) c2Matches.push({...m2, ref, slotIndex:s, displayNum:s+1});
       }
 
       return {
@@ -1061,8 +1061,9 @@ function buildCourts(teams) {
     slot.forEach((match, idx) => {
       match.slotIndex = slotIndex;
       match.ref = slotRef;
-      if (courtNum === 1) { match.displayNum = court1.length+1; court1.push(match); }
-      else { if (idx===0) { match.displayNum = court1.length+1; court1.push(match); } else { match.displayNum = court2.length+1; court2.push(match); } }
+      match.displayNum = slotIndex + 1; // スロット番号共通（コート間で同じ時間帯は同じ番号）
+      if (courtNum === 1) { court1.push(match); }
+      else { if (idx===0) { court1.push(match); } else { court2.push(match); } }
     });
   });
 
