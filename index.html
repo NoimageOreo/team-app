@@ -915,24 +915,19 @@ async function doShuffle() {
   await dbSet(`rooms/${roomCode}/gameStarted`, true);
   await dbSet(`rooms/${roomCode}/schedule`, schedule);
 }
-
 // ===== コート・スケジュール生成 =====
-// 6チーム以上はコートごとの小リーグに分ける。
-// 男女別・ガチ/エンジョイ別にも対応。
-// 少数グループは少しだけ再戦を追加する。
 function buildCourts(teams) {
   const keys = Object.keys(teams);
   const useTwoCourts = courtNum === 2;
 
   function createPairs(teamKeys) {
     if (teamKeys.length < 2) return [];
-
     let rotation = [...teamKeys];
     if (rotation.length % 2 === 1) rotation.push("BYE");
 
+    const pairs = [];
     const rounds = rotation.length - 1;
     const half = rotation.length / 2;
-    const pairs = [];
 
     for (let round = 0; round < rounds; round++) {
       for (let i = 0; i < half; i++) {
@@ -940,31 +935,19 @@ function buildCourts(teams) {
         const t2 = rotation[rotation.length - 1 - i];
         if (t1 !== "BYE" && t2 !== "BYE") pairs.push({ t1, t2 });
       }
-
       const fixed = rotation[0];
       const rest = rotation.slice(1);
       rest.unshift(rest.pop());
       rotation = [fixed, ...rest];
     }
-
     return pairs;
   }
 
   function groupLabel(teamKey) {
     const t = teams[teamKey];
-
-    if (splitLevel && gameMode === "separate") {
-      return `${t.gender || "mixed"}-${t.level || "none"}`;
-    }
-
-    if (splitLevel) {
-      return t.level || "none";
-    }
-
-    if (gameMode === "separate") {
-      return t.gender || "mixed";
-    }
-
+    if (splitLevel && gameMode === "separate") return `${t.gender || "mixed"}-${t.level || "none"}`;
+    if (splitLevel) return t.level || "none";
+    if (gameMode === "separate") return t.gender || "mixed";
     return "mixed";
   }
 
@@ -972,13 +955,18 @@ function buildCourts(teams) {
     if (!useTwoCourts || groupKeys.length < 6) {
       return [{ preferredCourt: null, teamKeys: groupKeys }];
     }
-
     const half = Math.ceil(groupKeys.length / 2);
-
     return [
       { preferredCourt: 1, teamKeys: groupKeys.slice(0, half) },
       { preferredCourt: 2, teamKeys: groupKeys.slice(half) }
     ];
+  }
+
+  function insertLimitByMainTeams(n) {
+    if (n >= 10) return 3;
+    if (n >= 8) return 2;
+    if (n >= 6) return 1;
+    return 0;
   }
 
   const grouped = {};
@@ -988,7 +976,7 @@ function buildCourts(teams) {
     grouped[g].push(k);
   });
 
-  let queues = [];
+  const queues = [];
 
   Object.entries(grouped).forEach(([group, groupKeys]) => {
     if (groupKeys.length < 2) return;
@@ -1001,7 +989,9 @@ function buildCourts(teams) {
         group,
         preferredCourt: part.preferredCourt,
         teamKeys: part.teamKeys,
-        matches
+        sourceSize: groupKeys.length,
+        matches,
+        played: 0
       });
     });
   });
@@ -1013,22 +1003,26 @@ function buildCourts(teams) {
     };
   }
 
-  const longest = Math.max(...queues.map(q => q.matches.length));
+  const mainSourceSize = Math.max(...queues.map(q => q.sourceSize || q.teamKeys.length));
+  const insertLimit = insertLimitByMainTeams(mainSourceSize);
 
-    queues.forEach(q => {
-    if (q.teamKeys.length > 3) return;
-    if (q.matches.length === 0) return;
+  const mainQueues = queues.filter(q => (q.sourceSize || q.teamKeys.length) === mainSourceSize);
+  const smallQueues = queues.filter(q => (q.sourceSize || q.teamKeys.length) < mainSourceSize);
 
-    const extraCount = Math.min(
-      Math.floor(longest / 3),
-      q.teamKeys.length === 2 ? 3 : 2
-    );
-
-    for (let i = 0; i < extraCount; i++) {
-      const base = q.matches[i % q.matches.length];
+  smallQueues.forEach(q => {
+    while (q.matches.length < insertLimit) {
+      const base = q.matches[q.matches.length % Math.max(q.matches.length, 1)];
+      if (!base) break;
       q.matches.push({ ...base, rematch: true });
     }
+    q.inserted = 0;
   });
+
+  const courtQueues = {
+    1: mainQueues.filter(q => q.preferredCourt === 1),
+    2: mainQueues.filter(q => q.preferredCourt === 2)
+  };
+  const mainFloatingQueues = mainQueues.filter(q => !q.preferredCourt);
 
   const refCount = {};
   keys.forEach(k => refCount[k] = 0);
@@ -1036,27 +1030,16 @@ function buildCourts(teams) {
   const court1 = [];
   const court2 = [];
 
-  queues.forEach(q => {
-    q.totalMatches = q.matches.length;
-    q.played = 0;
-    q.insertEvery = q.teamKeys.length <= 2 ? 3 : q.teamKeys.length === 3 ? 2 : 1;
-  });
-
-  const courtQueues = {
-    1: queues.filter(q => q.preferredCourt === 1),
-    2: queues.filter(q => q.preferredCourt === 2)
-  };
-  const floatingQueues = queues.filter(q => !q.preferredCourt);
-  const smallQueues = floatingQueues.filter(q => q.insertEvery > 1);
-  const mainFloatingQueues = floatingQueues.filter(q => q.insertEvery === 1);
-
   let smallCursor = 0;
   let smallCourtCursor = 1;
   const smallCourtCount = { 1: 0, 2: 0 };
 
+  function hasMainLeft() {
+    return mainQueues.some(q => q.matches.length > 0);
+  }
+
   function chooseSmallCourt() {
     if (!useTwoCourts) return 1;
-
     if (smallCourtCount[1] < smallCourtCount[2]) return 1;
     if (smallCourtCount[2] < smallCourtCount[1]) return 2;
 
@@ -1084,20 +1067,23 @@ function buildCourts(teams) {
     return match;
   }
 
-  function takeSmall(busy, slotIndex) {
-    const active = smallQueues.filter(q => q.matches.length > 0);
+  function takeScheduledSmall(busy, slotIndex) {
+    if ((slotIndex + 1) % 3 !== 0) return null;
+
+    const active = smallQueues.filter(q =>
+      q.matches.length > 0 && q.inserted < insertLimit
+    );
     if (!active.length) return null;
 
     for (let i = 0; i < active.length; i++) {
       const q = active[(smallCursor + i) % active.length];
-
-      if ((slotIndex + 1) % q.insertEvery !== 0) continue;
-
       const m = q.matches[0];
+
       if (!busy.has(m.t1) && !busy.has(m.t2)) {
         smallCursor = (smallCursor + i + 1) % active.length;
         q.matches.shift();
         q.played++;
+        q.inserted++;
         busy.add(m.t1);
         busy.add(m.t2);
         return m;
@@ -1107,15 +1093,13 @@ function buildCourts(teams) {
     return null;
   }
 
-  function takeAnySmall(busy) {
+  function takeAnySmallAfterMainDone(busy) {
+    if (hasMainLeft()) return null;
+
     const active = smallQueues.filter(q => q.matches.length > 0);
     if (!active.length) return null;
 
-    active.sort((a, b) => {
-      const ar = a.played / Math.max(a.totalMatches, 1);
-      const br = b.played / Math.max(b.totalMatches, 1);
-      return ar - br;
-    });
+    active.sort((a, b) => a.matches.length - b.matches.length);
 
     const picked = active.find(q => {
       const m = q.matches[0];
@@ -1147,40 +1131,25 @@ function buildCourts(teams) {
 
   while (queues.some(q => q.matches.length > 0)) {
     const busy = new Set();
-
     let c1Match = null;
     let c2Match = null;
 
-    const shouldInsertSmall = smallQueues.some(q =>
-      q.matches.length > 0 && (slotIndex + 1) % q.insertEvery === 0
-    );
-
-    if (shouldInsertSmall) {
+    const smallMatch = takeScheduledSmall(busy, slotIndex);
+    if (smallMatch) {
       const smallCourt = chooseSmallCourt();
-      const smallMatch = takeSmall(busy, slotIndex);
-
-      if (smallMatch) {
-        if (smallCourt === 1) c1Match = smallMatch;
-        else c2Match = smallMatch;
-        smallCourtCount[smallCourt]++;
-      }
+      if (smallCourt === 1) c1Match = smallMatch;
+      else c2Match = smallMatch;
+      smallCourtCount[smallCourt]++;
     }
 
-    if (!c1Match) {
-      c1Match = takeFrom(courtQueues[1], busy);
-    }
+    if (!c1Match) c1Match = takeFrom(courtQueues[1], busy);
+    if (useTwoCourts && !c2Match) c2Match = takeFrom(courtQueues[2], busy);
 
-    if (useTwoCourts && !c2Match) {
-      c2Match = takeFrom(courtQueues[2], busy);
-    }
+    if (!c1Match) c1Match = takeFrom(mainFloatingQueues, busy);
+    if (useTwoCourts && !c2Match) c2Match = takeFrom(mainFloatingQueues, busy);
 
-    if (!c1Match) {
-      c1Match = takeFrom(mainFloatingQueues, busy) || takeAnySmall(busy);
-    }
-
-    if (useTwoCourts && !c2Match) {
-      c2Match = takeFrom(mainFloatingQueues, busy) || takeAnySmall(busy);
-    }
+    if (!c1Match) c1Match = takeAnySmallAfterMainDone(busy);
+    if (useTwoCourts && !c2Match) c2Match = takeAnySmallAfterMainDone(busy);
 
     if (!c1Match && !c2Match) break;
 
