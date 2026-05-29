@@ -1023,6 +1023,22 @@ function buildCourts(teams) {
     2: mainQueues.filter(q => q.preferredCourt === 2)
   };
   const mainFloatingQueues = mainQueues.filter(q => !q.preferredCourt);
+  const mainMatchCountByCourt = {
+  1: courtQueues[1].reduce((sum, q) => sum + q.matches.length, 0),
+  2: courtQueues[2].reduce((sum, q) => sum + q.matches.length, 0)
+};
+
+function hasCourtMainLeft(court) {
+  return courtQueues[court].some(q => q.matches.length > 0);
+}
+
+function takeFromOtherMainIfOwnDone(court, busy) {
+  if (!useTwoCourts) return null;
+  if (hasCourtMainLeft(court)) return null;
+
+  const other = court === 1 ? 2 : 1;
+  return takeFrom(courtQueues[other], busy);
+}
 
   const refCount = {};
   keys.forEach(k => refCount[k] = 0);
@@ -1038,15 +1054,19 @@ function buildCourts(teams) {
     return mainQueues.some(q => q.matches.length > 0);
   }
 
-  function chooseSmallCourt() {
-    if (!useTwoCourts) return 1;
-    if (smallCourtCount[1] < smallCourtCount[2]) return 1;
-    if (smallCourtCount[2] < smallCourtCount[1]) return 2;
+function chooseSmallCourt() {
+  if (!useTwoCourts) return 1;
 
-    const court = smallCourtCursor;
-    smallCourtCursor = smallCourtCursor === 1 ? 2 : 1;
-    return court;
-  }
+  const total1 = mainMatchCountByCourt[1] + smallCourtCount[1];
+  const total2 = mainMatchCountByCourt[2] + smallCourtCount[2];
+
+  if (total1 < total2) return 1;
+  if (total2 < total1) return 2;
+
+  const court = smallCourtCursor;
+  smallCourtCursor = smallCourtCursor === 1 ? 2 : 1;
+  return court;
+}
 
   function takeFrom(list, busy) {
     const candidates = list
@@ -1144,6 +1164,9 @@ function buildCourts(teams) {
 
     if (!c1Match) c1Match = takeFrom(courtQueues[1], busy);
     if (useTwoCourts && !c2Match) c2Match = takeFrom(courtQueues[2], busy);
+
+    if (!c1Match) c1Match = takeFromOtherMainIfOwnDone(1, busy);
+    if (useTwoCourts && !c2Match) c2Match = takeFromOtherMainIfOwnDone(2, busy);
 
     if (!c1Match) c1Match = takeFrom(mainFloatingQueues, busy);
     if (useTwoCourts && !c2Match) c2Match = takeFrom(mainFloatingQueues, busy);
