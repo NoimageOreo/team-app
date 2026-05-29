@@ -1015,7 +1015,7 @@ function buildCourts(teams) {
 
   const longest = Math.max(...queues.map(q => q.matches.length));
 
-  queues.forEach(q => {
+    queues.forEach(q => {
     if (q.teamKeys.length > 3) return;
     if (q.matches.length === 0) return;
 
@@ -1049,7 +1049,21 @@ function buildCourts(teams) {
   const floatingQueues = queues.filter(q => !q.preferredCourt);
   const smallQueues = floatingQueues.filter(q => q.insertEvery > 1);
   const mainFloatingQueues = floatingQueues.filter(q => q.insertEvery === 1);
+
   let smallCursor = 0;
+  let smallCourtCursor = 1;
+  const smallCourtCount = { 1: 0, 2: 0 };
+
+  function chooseSmallCourt() {
+    if (!useTwoCourts) return 1;
+
+    if (smallCourtCount[1] < smallCourtCount[2]) return 1;
+    if (smallCourtCount[2] < smallCourtCount[1]) return 2;
+
+    const court = smallCourtCursor;
+    smallCourtCursor = smallCourtCursor === 1 ? 2 : 1;
+    return court;
+  }
 
   function takeFrom(list, busy) {
     const candidates = list
@@ -1076,6 +1090,7 @@ function buildCourts(teams) {
 
     for (let i = 0; i < active.length; i++) {
       const q = active[(smallCursor + i) % active.length];
+
       if ((slotIndex + 1) % q.insertEvery !== 0) continue;
 
       const m = q.matches[0];
@@ -1132,34 +1147,31 @@ function buildCourts(teams) {
 
   while (queues.some(q => q.matches.length > 0)) {
     const busy = new Set();
+
+    let c1Match = null;
+    let c2Match = null;
+
     const shouldInsertSmall = smallQueues.some(q =>
       q.matches.length > 0 && (slotIndex + 1) % q.insertEvery === 0
     );
 
-    let c1Match = takeFrom(courtQueues[1], busy);
-    let c2Match = useTwoCourts ? takeFrom(courtQueues[2], busy) : null;
-
     if (shouldInsertSmall) {
-      const smallTargetCourt =
-        !useTwoCourts || court1.length <= court2.length ? 1 : 2;
-
+      const smallCourt = chooseSmallCourt();
       const smallMatch = takeSmall(busy, slotIndex);
 
       if (smallMatch) {
-        if (smallTargetCourt === 1) {
-          if (c1Match) {
-            const returnQueue = queues.find(q => q.teamKeys.includes(c1Match.t1) && q.teamKeys.includes(c1Match.t2));
-            if (returnQueue) returnQueue.matches.unshift(c1Match);
-          }
-          c1Match = smallMatch;
-        } else {
-          if (c2Match) {
-            const returnQueue = queues.find(q => q.teamKeys.includes(c2Match.t1) && q.teamKeys.includes(c2Match.t2));
-            if (returnQueue) returnQueue.matches.unshift(c2Match);
-          }
-          c2Match = smallMatch;
-        }
+        if (smallCourt === 1) c1Match = smallMatch;
+        else c2Match = smallMatch;
+        smallCourtCount[smallCourt]++;
       }
+    }
+
+    if (!c1Match) {
+      c1Match = takeFrom(courtQueues[1], busy);
+    }
+
+    if (useTwoCourts && !c2Match) {
+      c2Match = takeFrom(courtQueues[2], busy);
     }
 
     if (!c1Match) {
