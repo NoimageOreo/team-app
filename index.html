@@ -917,159 +917,194 @@ async function doShuffle() {
 }
 
 // ===== コート・スケジュール生成 =====
-// ▼ 変更⑩: buildCourts を splitLevel 対応に
+// 6チーム以上はコートごとの小リーグに分ける。
+// 男女別・ガチ/エンジョイ別にも対応。
+// 少数グループは少しだけ再戦を追加する。
 function buildCourts(teams) {
   const keys = Object.keys(teams);
+  const useTwoCourts = courtNum === 2;
 
-  // splitLevel ON: グループ別に総当たりを生成してコートに割り振る
-  if (splitLevel) {
-    const groupMap = {};
-    keys.forEach(k => {
-      const g = teams[k].group || 'default';
-      if (!groupMap[g]) groupMap[g] = [];
-      groupMap[g].push(k);
-    });
+  function createPairs(teamKeys) {
+    if (teamKeys.length < 2) return [];
 
-    // ペア生成のみ（審判なし）
-    function makeMatchPairs(gKeys) {
-      if (gKeys.length < 2) return [];
-      let rot = [...gKeys];
-      if (rot.length % 2 !== 0) rot.push("BYE");
-      const rounds = rot.length - 1, half = rot.length / 2;
-      const pairs = [];
-      for (let r = 0; r < rounds; r++) {
-        for (let i = 0; i < half; i++) {
-          const t1 = rot[i], t2 = rot[rot.length-1-i];
-          if (t1 !== "BYE" && t2 !== "BYE") pairs.push({t1, t2});
-        }
-        const fixed = rot[0]; const rest = rot.slice(1); rest.unshift(rest.pop()); rot = [fixed, ...rest];
-      }
-      return pairs;
-    }
-
-    const groupEntries = Object.entries(groupMap).filter(([,gk]) => gk.length >= 2);
-    if (groupEntries.length === 0) return { court1: { teamKeys: keys, matches: [] }, court2: null };
-
-    // 審判カウントは全チーム共通
-    const refCount = {}; keys.forEach(k => refCount[k] = 0);
-
-    if (courtNum === 2 && groupEntries.length >= 2) {
-      const mid = Math.ceil(groupEntries.length / 2);
-      const c1Keys = groupEntries.slice(0, mid).flatMap(([,gk]) => gk);
-      const c2Keys = groupEntries.slice(mid).flatMap(([,gk]) => gk);
-      const c1Pairs = groupEntries.slice(0, mid).flatMap(([,gk]) => makeMatchPairs(gk));
-      const c2Pairs = groupEntries.slice(mid).flatMap(([,gk]) => makeMatchPairs(gk));
-
-      const maxSlots = Math.max(c1Pairs.length, c2Pairs.length);
-      const c1Matches = [], c2Matches = [];
-
-      for (let s = 0; s < maxSlots; s++) {
-        const m1 = c1Pairs[s] || null;
-        const m2 = c2Pairs[s] || null;
-        // 両コートの試合中チームをまとめてbusy扱い
-        const busy = new Set();
-        if (m1) { busy.add(m1.t1); busy.add(m1.t2); }
-        if (m2) { busy.add(m2.t1); busy.add(m2.t2); }
-        // 全チームから1人審判を選んで両コートに割り当て
-        const cands = keys.filter(k => !busy.has(k)).sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5);
-        const ref = cands[0] || null;
-        if (ref) refCount[ref]++;
-        if (m1) c1Matches.push({...m1, ref, slotIndex:s, displayNum:s+1});
-        if (m2) c2Matches.push({...m2, ref, slotIndex:s, displayNum:s+1});
-      }
-
-      return {
-        court1: { teamKeys: c1Keys, matches: c1Matches },
-        court2: { teamKeys: c2Keys, matches: c2Matches }
-      };
-    }
-
-    // 1コート or グループが1つ: インターリーブ後に全チームで審判割り当て
-    const groupPairs = groupEntries.map(([,gk]) => makeMatchPairs(gk));
-    const merged = [];
-    const maxLen = Math.max(...groupPairs.map(g=>g.length));
-    for (let i = 0; i < maxLen; i++) {
-      groupPairs.forEach(gp => { if (i < gp.length) merged.push(gp[i]); });
-    }
-    const c1Matches = merged.map((m, i) => {
-      const busy = new Set([m.t1, m.t2]);
-      const cands = keys.filter(k => !busy.has(k)).sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5);
-      const ref = cands[0] || null;
-      if (ref) refCount[ref]++;
-      return {...m, ref, slotIndex:i, displayNum:i+1};
-    });
-    return { court1: { teamKeys: keys, matches: c1Matches }, court2: null };
-  }
-
-  // splitLevel OFF: 既存ロジック（男女別・混合）
-  function createRoundRobin(teamKeys) {
-    if (teamKeys.length <= 1) return [];
     let rotation = [...teamKeys];
     if (rotation.length % 2 === 1) rotation.push("BYE");
-    const rounds = rotation.length - 1, half = rotation.length / 2;
-    const result = [];
+
+    const rounds = rotation.length - 1;
+    const half = rotation.length / 2;
+    const pairs = [];
+
     for (let round = 0; round < rounds; round++) {
-      let matches = [];
       for (let i = 0; i < half; i++) {
-        const t1 = rotation[i], t2 = rotation[rotation.length-1-i];
-        if (t1 !== "BYE" && t2 !== "BYE") matches.push({t1, t2});
+        const t1 = rotation[i];
+        const t2 = rotation[rotation.length - 1 - i];
+        if (t1 !== "BYE" && t2 !== "BYE") pairs.push({ t1, t2 });
       }
-      result.push(matches);
-      const fixed = rotation[0]; const rest = rotation.slice(1); rest.unshift(rest.pop()); rotation = [fixed, ...rest];
+
+      const fixed = rotation[0];
+      const rest = rotation.slice(1);
+      rest.unshift(rest.pop());
+      rotation = [fixed, ...rest];
     }
-    return result;
+
+    return pairs;
   }
 
-  let allMatches = [];
-  if (gameMode === "separate") {
-    const maleKeys = keys.filter(k => teams[k].gender === "male");
-    const femaleKeys = keys.filter(k => teams[k].gender === "female");
-    const maleRounds = createRoundRobin(maleKeys);
-    const femaleRounds = createRoundRobin(femaleKeys);
-    const maxRounds = Math.max(maleRounds.length, femaleRounds.length);
-    for (let i = 0; i < maxRounds; i++) {
-      if (maleRounds[i]) allMatches.push(...maleRounds[i]);
-      if (femaleRounds[i]) allMatches.push(...femaleRounds[i]);
+  function groupLabel(teamKey) {
+    const t = teams[teamKey];
+
+    if (splitLevel && gameMode === "separate") {
+      return `${t.gender || "mixed"}-${t.level || "none"}`;
     }
-  } else {
-    const rounds = createRoundRobin(keys);
-    rounds.forEach(r => allMatches.push(...r));
+
+    if (splitLevel) {
+      return t.level || "none";
+    }
+
+    if (gameMode === "separate") {
+      return t.gender || "mixed";
+    }
+
+    return "mixed";
   }
 
-  const slots = [];
-  const remaining = [...allMatches];
-  while (remaining.length > 0) {
-    const slot = []; const busy = new Set();
-    for (let i = 0; i < remaining.length; i++) {
-      if (slot.length >= courtNum) break;
-      const m = remaining[i];
-      if (!busy.has(m.t1) && !busy.has(m.t2)) { slot.push(m); busy.add(m.t1); busy.add(m.t2); remaining.splice(i,1); i--; }
+  function splitForCourts(groupKeys) {
+    if (!useTwoCourts || groupKeys.length < 6) {
+      return [{ preferredCourt: null, teamKeys: groupKeys }];
     }
-    if (slot.length === 0 && remaining.length > 0) slot.push(remaining.shift());
-    slots.push(slot);
+
+    const half = Math.ceil(groupKeys.length / 2);
+
+    return [
+      { preferredCourt: 1, teamKeys: groupKeys.slice(0, half) },
+      { preferredCourt: 2, teamKeys: groupKeys.slice(half) }
+    ];
   }
 
-  let court1 = [], court2 = [];
-  const refCount = {}; keys.forEach(k => refCount[k] = 0);
+  const grouped = {};
+  keys.forEach(k => {
+    const g = groupLabel(k);
+    if (!grouped[g]) grouped[g] = [];
+    grouped[g].push(k);
+  });
 
-  slots.forEach((slot, slotIndex) => {
-    const busy = new Set(); slot.forEach(m => { busy.add(m.t1); busy.add(m.t2); });
-    // ▼ 審判はスロット単位で1チーム（両コート共通）
-    const cands = keys.filter(k => !busy.has(k)).sort((a,b) => refCount[a]-refCount[b]||Math.random()-.5);
-    const slotRef = cands[0] || null;
-    if (slotRef) refCount[slotRef]++;
-    slot.forEach((match, idx) => {
-      match.slotIndex = slotIndex;
-      match.ref = slotRef;
-      match.displayNum = slotIndex + 1; // スロット番号共通（コート間で同じ時間帯は同じ番号）
-      if (courtNum === 1) { court1.push(match); }
-      else { if (idx===0) { court1.push(match); } else { court2.push(match); } }
+  let queues = [];
+
+  Object.entries(grouped).forEach(([group, groupKeys]) => {
+    if (groupKeys.length < 2) return;
+
+    splitForCourts(groupKeys).forEach(part => {
+      const matches = createPairs(part.teamKeys);
+      if (!matches.length) return;
+
+      queues.push({
+        group,
+        preferredCourt: part.preferredCourt,
+        teamKeys: part.teamKeys,
+        matches
+      });
     });
   });
 
+  if (!queues.length) {
+    return {
+      court1: { teamKeys: keys, matches: [] },
+      court2: useTwoCourts ? { teamKeys: keys, matches: [] } : null
+    };
+  }
+
+  const longest = Math.max(...queues.map(q => q.matches.length));
+
+  queues.forEach(q => {
+    if (q.teamKeys.length > 3) return;
+    if (q.matches.length === 0) return;
+
+    const extraCount = Math.min(
+      Math.floor(longest / 3),
+      q.teamKeys.length === 2 ? 3 : 2
+    );
+
+    for (let i = 0; i < extraCount; i++) {
+      const base = q.matches[i % q.matches.length];
+      q.matches.push({ ...base, rematch: true });
+    }
+  });
+
+  const refCount = {};
+  keys.forEach(k => refCount[k] = 0);
+
+  const court1 = [];
+  const court2 = [];
+
+  function takeMatch(preferredCourt, busy) {
+    const candidates = queues
+      .map(q => ({ q }))
+      .filter(x => x.q.matches.length > 0)
+      .sort((a, b) => {
+        const ap = a.q.preferredCourt === preferredCourt ? 0 : 1;
+        const bp = b.q.preferredCourt === preferredCourt ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        return b.q.matches.length - a.q.matches.length;
+      });
+
+    let picked = candidates.find(({ q }) => {
+      const m = q.matches[0];
+      return !busy.has(m.t1) && !busy.has(m.t2);
+    });
+
+    if (!picked && busy.size === 0) {
+      picked = candidates[0];
+    }
+
+    if (!picked) return null;
+
+    const match = picked.q.matches.shift();
+    busy.add(match.t1);
+    busy.add(match.t2);
+    return match;
+  }
+
+  let slotIndex = 0;
+
+  while (queues.some(q => q.matches.length > 0)) {
+    const busy = new Set();
+
+    const m1 = takeMatch(1, busy);
+    const m2 = useTwoCourts ? takeMatch(2, busy) : null;
+
+    if (!m1 && !m2) break;
+
+    const refCandidates = keys
+      .filter(k => !busy.has(k))
+      .sort((a, b) => refCount[a] - refCount[b] || Math.random() - 0.5);
+
+    const ref = refCandidates[0] || null;
+    if (ref) refCount[ref]++;
+
+    if (m1) {
+      court1.push({
+        ...m1,
+        ref,
+        slotIndex,
+        displayNum: slotIndex + 1
+      });
+    }
+
+    if (m2) {
+      court2.push({
+        ...m2,
+        ref,
+        slotIndex,
+        displayNum: slotIndex + 1
+      });
+    }
+
+    slotIndex++;
+  }
+
   return {
     court1: { teamKeys: keys, matches: court1 },
-    court2: courtNum===2 ? { teamKeys: keys, matches: court2 } : null
+    court2: useTwoCourts ? { teamKeys: keys, matches: court2 } : null
   };
 }
 
