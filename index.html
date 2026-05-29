@@ -1036,34 +1036,25 @@ function buildCourts(teams) {
   const court1 = [];
   const court2 = [];
 
-  const maxGroupTeams = Math.max(...queues.map(q => q.teamKeys.length));
-
   queues.forEach(q => {
     q.totalMatches = q.matches.length;
     q.played = 0;
-    q.insertEvery = getInsertEvery(q.teamKeys.length, maxGroupTeams);
+    q.insertEvery = q.teamKeys.length <= 2 ? 3 : q.teamKeys.length === 3 ? 2 : 1;
   });
 
-  const mainQueues = queues.filter(q => q.insertEvery === 1);
-  const smallQueues = queues.filter(q => q.insertEvery > 1);
+  const courtQueues = {
+    1: queues.filter(q => q.preferredCourt === 1),
+    2: queues.filter(q => q.preferredCourt === 2)
+  };
+  const floatingQueues = queues.filter(q => !q.preferredCourt);
+  const smallQueues = floatingQueues.filter(q => q.insertEvery > 1);
+  const mainFloatingQueues = floatingQueues.filter(q => q.insertEvery === 1);
   let smallCursor = 0;
 
-  function getInsertEvery(teamCount, maxTeams) {
-    if (teamCount >= maxTeams) return 1;
-    if (teamCount <= 2) return 3;
-    if (teamCount === 3) return 2;
-    return 1;
-  }
-
-  function takeFromQueueList(list, busy) {
+  function takeFrom(list, busy) {
     const candidates = list
       .filter(q => q.matches.length > 0)
-      .sort((a, b) => {
-        const ap = a.preferredCourt ? 0 : 1;
-        const bp = b.preferredCourt ? 0 : 1;
-        if (ap !== bp) return ap - bp;
-        return b.matches.length - a.matches.length;
-      });
+      .sort((a, b) => b.matches.length - a.matches.length);
 
     const picked = candidates.find(q => {
       const m = q.matches[0];
@@ -1079,13 +1070,12 @@ function buildCourts(teams) {
     return match;
   }
 
-  function takeSmallMatch(busy, slotIndex) {
+  function takeSmall(busy, slotIndex) {
     const active = smallQueues.filter(q => q.matches.length > 0);
     if (!active.length) return null;
 
     for (let i = 0; i < active.length; i++) {
       const q = active[(smallCursor + i) % active.length];
-
       if ((slotIndex + 1) % q.insertEvery !== 0) continue;
 
       const m = q.matches[0];
@@ -1102,7 +1092,7 @@ function buildCourts(teams) {
     return null;
   }
 
-  function takeAnySmallMatch(busy) {
+  function takeAnySmall(busy) {
     const active = smallQueues.filter(q => q.matches.length > 0);
     if (!active.length) return null;
 
@@ -1126,19 +1116,61 @@ function buildCourts(teams) {
     return match;
   }
 
+  function addMatchToCourt(courtNumForMatch, match, ref, slotIndex) {
+    const item = {
+      ...match,
+      ref,
+      slotIndex,
+      displayNum: slotIndex + 1
+    };
+
+    if (courtNumForMatch === 1) court1.push(item);
+    else court2.push(item);
+  }
+
   let slotIndex = 0;
 
   while (queues.some(q => q.matches.length > 0)) {
     const busy = new Set();
+    const shouldInsertSmall = smallQueues.some(q =>
+      q.matches.length > 0 && (slotIndex + 1) % q.insertEvery === 0
+    );
 
-    let m1 = takeSmallMatch(busy, slotIndex) || takeFromQueueList(mainQueues, busy) || takeAnySmallMatch(busy);
-    let m2 = useTwoCourts ? takeFromQueueList(mainQueues, busy) || takeSmallMatch(busy, slotIndex) : null;
+    let c1Match = takeFrom(courtQueues[1], busy);
+    let c2Match = useTwoCourts ? takeFrom(courtQueues[2], busy) : null;
 
-    if (!m2 && useTwoCourts && !m1) {
-      m2 = takeAnySmallMatch(busy);
+    if (shouldInsertSmall) {
+      const smallTargetCourt =
+        !useTwoCourts || court1.length <= court2.length ? 1 : 2;
+
+      const smallMatch = takeSmall(busy, slotIndex);
+
+      if (smallMatch) {
+        if (smallTargetCourt === 1) {
+          if (c1Match) {
+            const returnQueue = queues.find(q => q.teamKeys.includes(c1Match.t1) && q.teamKeys.includes(c1Match.t2));
+            if (returnQueue) returnQueue.matches.unshift(c1Match);
+          }
+          c1Match = smallMatch;
+        } else {
+          if (c2Match) {
+            const returnQueue = queues.find(q => q.teamKeys.includes(c2Match.t1) && q.teamKeys.includes(c2Match.t2));
+            if (returnQueue) returnQueue.matches.unshift(c2Match);
+          }
+          c2Match = smallMatch;
+        }
+      }
     }
 
-    if (!m1 && !m2) break;
+    if (!c1Match) {
+      c1Match = takeFrom(mainFloatingQueues, busy) || takeAnySmall(busy);
+    }
+
+    if (useTwoCourts && !c2Match) {
+      c2Match = takeFrom(mainFloatingQueues, busy) || takeAnySmall(busy);
+    }
+
+    if (!c1Match && !c2Match) break;
 
     const refCandidates = keys
       .filter(k => !busy.has(k))
@@ -1147,23 +1179,8 @@ function buildCourts(teams) {
     const ref = refCandidates[0] || null;
     if (ref) refCount[ref]++;
 
-    if (m1) {
-      court1.push({
-        ...m1,
-        ref,
-        slotIndex,
-        displayNum: slotIndex + 1
-      });
-    }
-
-    if (m2) {
-      court2.push({
-        ...m2,
-        ref,
-        slotIndex,
-        displayNum: slotIndex + 1
-      });
-    }
+    if (c1Match) addMatchToCourt(1, c1Match, ref, slotIndex);
+    if (c2Match) addMatchToCourt(2, c2Match, ref, slotIndex);
 
     slotIndex++;
   }
@@ -1173,6 +1190,7 @@ function buildCourts(teams) {
     court2: useTwoCourts ? { teamKeys: keys, matches: court2 } : null
   };
 }
+
 // ===== ユーティリティ =====
 function copyCode() {
   navigator.clipboard?.writeText(roomCode).catch(() => {});
